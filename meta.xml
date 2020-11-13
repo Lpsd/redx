@@ -1,0 +1,29 @@
+<meta>
+    <info type="script" description="DX Library" author="Lpsd" />
+
+    <!-- Files -->
+    <file src="default.properties" />
+    
+    <!-- Shared -->
+    <script src="shared/classlib.lua" type="shared" />
+    <script src="shared/utils.lua" type="shared" />
+        <!-- Classes -->
+        <script src="shared/classes/Class.lua" type="shared" />
+        <script src="shared/classes/Singleton.lua" type="shared" />
+
+    <!-- Client -->
+    <script src="client/init.lua" type="client" />
+    <script src="client/properties.lua" type="client" />
+        <!-- Classes -->
+        <script src="client/classes/Core.lua" type="client" />
+        <script src="client/classes/Renderer.lua" type="client" />
+        <script src="client/classes/Event.lua" type="client" />
+
+            <!-- Managers -->
+            <script src="client/classes/managers/EventManager.lua" type="client" />
+
+            <!-- Elements -->
+            <script src="client/classes/elements/DxElement.lua" type="client" />
+            <script src="client/classes/elements/DxScrollPane.lua" type="client" />
+            <script src="client/classes/elements/DxRect.lua" type="client" />
+</meta>

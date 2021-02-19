@@ -9,6 +9,8 @@ SERVER = triggerServerEvent == nil
 CLIENT = not SERVER
 DEBUG = DEBUG or false
 
+DEFAULT_ARGS = 6
+
 function enew(element, class, ...)
 	-- DEBUG: Validate that we are not instantiating a class with pure virtual methods
 	if DEBUG then
@@ -46,11 +48,19 @@ function enew(element, class, ...)
 		end
 	end
 		
-	callDerivedConstructor(superMultiple(class), element, ...) 
+	callDerivedConstructor(superMultiple(class), element, ...)
+
+    local args = {...}
+
+    for i = #args, 1, -1 do
+        if (i >= 1) and (i <= DEFAULT_ARGS) then
+            table.remove(args, i)
+        end
+    end
 	
 	-- Call constructor
 	if rawget(class, "constructor") then
-		rawget(class, "constructor")(element, ...)
+		rawget(class, "constructor")(element, unpack(args))
 	end
 	element.constructor = false
 	
@@ -102,11 +112,19 @@ function new(class, ...)
 		end
 	end
 		
-	callDerivedConstructor(superMultiple(class), instance, ...) 
+	callDerivedConstructor(superMultiple(class), instance, ...)
+    
+    local args = {...}
+
+    for i = #args, 1, -1 do
+        if (i >= 1) and (i <= DEFAULT_ARGS) then
+            table.remove(args, i)
+        end
+    end
 	
 	-- Call constructor
 	if rawget(class, "constructor") then
-		rawget(class, "constructor")(instance, ...)
+		rawget(class, "constructor")(instance, unpack(args))
 	end
 	instance.constructor = false
 

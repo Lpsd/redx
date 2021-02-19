@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: client/classes/Event.lua
--- Description: Event class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 Event = inherit(Class)

@@ -1,3 +1,6 @@
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
+
 DEFAULT_PROPERTIES = false
 
 local defaultPropertiesPath = "default.properties"

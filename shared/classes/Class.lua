@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: shared/classes/class.lua
--- Description: Base class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 Class = {}

@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: shared/classes/singleton.lua
--- Description: Basic singleton class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 Singleton = inherit(Class)

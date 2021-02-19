@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: client/classes/Core.lua
--- Description: Core class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 Core = inherit(Singleton)

@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: client/classes/managers/EventManager.lua
--- Description: Event manager class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 EventManager = inherit(Singleton)

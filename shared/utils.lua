@@ -17,13 +17,6 @@ function math.clamp(num, min, max)
     return (num <= min) and min or (num >= max) and max or num
 end
 
-function isDxElement(e)
-    if (e) and (e._dx) then
-        return true
-    end
-    return false
-end
-
 function dxDebug(...)
     if (DEBUG) then
         return iprint("[DX Library]", ...)
@@ -31,23 +24,16 @@ function dxDebug(...)
     return false
 end
 
-function isMouseInPosition ( x, y, width, height )
-	if ( not isCursorShowing( ) ) then
-		return false
+function enum(tbl, prefix)
+	if (type(tbl) ~= "table" or #tbl == 0 or (prefix and type(prefix) ~= "string")) then
+		return
 	end
-	local sx, sy = guiGetScreenSize ( )
-	local cx, cy = getCursorPosition ( )
-	local cx, cy = ( cx * sx ), ( cy * sy )
 	
-	return ( ( cx >= x and cx <= x + width ) and ( cy >= y and cy <= y + height ) )
-end
-
-function getAbsoluteCursorPosition()
-    local cursorX, cursorY = getCursorPosition()
-    
-    if (not cursorX) then
-        return false
-    end
-
-	return (cursorX * SCREEN_WIDTH), (cursorY * SCREEN_HEIGHT)
+	for i, v in ipairs(tbl) do
+		local index = (prefix and prefix .. '_' or '') .. v
+		
+		if (not _G[index]) then
+			_G[index] = i
+		end
+	end
 end

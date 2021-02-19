@@ -1,12 +1,12 @@
--- Author: Lpsd
--- File: client/classes/elements/DxRect.lua
--- Description: Basic rectangle class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 DxRect = inherit(DxElement)
 -- *******************************************************************
 
 function DxRect:constructor()
+    self.type = DX_RECT
     self:addRenderFunction(self.drawRect)
 end
 

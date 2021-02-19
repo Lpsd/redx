@@ -1,10 +1,15 @@
--- Author: Lpsd
--- File: init.lua
--- Description: Initializes the DX Library and contains globals/constants
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- Constants
 SCREEN_WIDTH, SCREEN_HEIGHT = false, false
 DEBUG = true
+
+enum({
+    "RECT",
+    "SCROLLPANE",
+    "SCROLLBAR"
+}, "DX")
 
 -- *******************************************************************
 
@@ -25,16 +30,27 @@ function init()
     -- Loads the default properties
     loadDefaultProperties()
 
+    local tick = getTickCount()
+
     -- Testing
     dxTest()
+
+    iprint("Test took " .. tostring(getTickCount() - tick) .. "ms")
 end
 addEventHandler("onClientResourceStart", resourceRoot, init)
 
 -- *******************************************************************
 
 function dxTest()
-    parent = DxRect:new(300, 300, 200, 200)
-    parent:setColor(255, 0, 0, 255)
+    scrollpane = DxScrollPane:new(300, 300, 200, 200)
+    scrollpane:setColor(255, 255, 255, 255)
+    scrollpane:setProperty("draggable_children", true)
+
+    item = DxRect:new(135, 135, 75, 75)
+    item:setColor(255, 0, 0, 255)
+    item:setParent(scrollpane)
+
+    scrollbar = DxScrollBar:new(500, 500, 100, 35, false, nil, "vertical")
 end
 
 -- *******************************************************************

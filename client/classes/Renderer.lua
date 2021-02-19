@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: client/classes/Renderer.lua
--- Description: Renderer class
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 Renderer = inherit(Singleton)
@@ -49,8 +48,11 @@ function Renderer:handleClick(button, state, tbl)
             local clickArea = element:getAbsoluteClickArea()
             if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                 if (not element:isObstructed()) then
-                    DxFocusedElement = element
-                    return element["click"..button](element, (state == "down") and true or false)
+                    local parentClickArea = element:getParent() and element.parent:getAbsoluteClickArea() or false
+                    if (parentClickArea) and (isMouseInPosition(parentClickArea.x, parentClickArea.y, parentClickArea.width, parentClickArea.height)) or (not parentClickArea) then
+                        DxFocusedElement = element
+                        return element["click"..button](element, (state == "down") and true or false)
+                    end
                 end
             end
         end

@@ -1,6 +1,5 @@
--- Author: Lpsd
--- File: client/classes/elements/DxElement.lua
--- Description: Base class for all dx elements
+-- Author: Lpsd (https://github.com/Lpsd/)
+-- See the LICENSE file @ root directory
 
 -- *******************************************************************
 DxElement = inherit(Class)
@@ -17,17 +16,19 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     setmetatable(self, mt)
 
     self.id = string.random(6) .. getTickCount()
-    self.name = "default-" .. self.id
+    self.name = "dx-" .. self.id
     self.__dx = true
 
     self.baseX, self.baseY = x, y
     self.baseWidth, self.baseHeight = width, height
 
     self.x, self.y = 0, 0
-    self.width, self.height = 0, 0
+    self.width, self.height = width, height
 
     self.previousX, self.previousY = 0, 0
     self.previousWidth, self.previousHeight = 0, 0
+
+    self.offsetX, self.offsetY = 0, 0
 
     -- Relative click area
     self.clickArea = {
@@ -81,29 +82,20 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     self.clickInitialX, self.clickInitialY = 0, 0
     self.dragging = false
 
+    self.renderWithChildren = true
+
     self:setPosition(x, y, relative)
     self:setSize(width, height, relative)
     
-    self:addRenderFunction(self.calculateColor, true)
-    self:addRenderFunction(self.calculatePosition, true)
-    self:addRenderFunction(self.calculateSize, true)
+    -- Some processing needs to bypass addRenderFunction (the renderer for these needs to be able to be called dynamically, where as the processing below needs to be done at all times)
+    addEventHandler("onClientRender", root, bind(self.calculateColor, self))
+    addEventHandler("onClientRender", root, bind(self.calculatePosition, self))
+    addEventHandler("onClientRender", root, bind(self.calculateSize, self))
 
     self.index = 0
 
     self:setParent(parent)
     self:setIndex(1)
-
-    -- Set active property listeners
-    self:addPropertyListener("x")
-    self:addPropertyListener("y")
-    self:addPropertyListener("width")
-    self:addPropertyListener("height")
-
-    self.fPropertyChange = function(propertyName, oldValue, newValue)
-        iprint("fPropertyChange", propertyName, oldValue, newValue)
-    end
-
-    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(self, self.fPropertyChange)
 
     return self
 end
@@ -138,15 +130,26 @@ end
 
 function DxElement:addPropertyListener(property)
     if (self.propertyListeners[property]) then
-        return dxDebug("[addPropertyListener] Property listener already active", string.format("property: %s", property))
+        return dxDebug("[addPropertyListener] Property listener already active", string.format("property: %s", property)) and false
     end
 
     if (not self[property]) then
-        return dxDebug("[addPropertyListener] Property does not exist", string.format("property: %s", property))
+        return dxDebug("[addPropertyListener] Property does not exist", string.format("property: %s", property)) and false
     end
 
     self.propertyListeners[property] = true
     dxDebug("[addPropertyListener] Added property listener", string.format("property: %s", property))
+    return true
+end
+
+function DxElement:removePropertyListener(property)
+    if (not self.propertyListeners[property]) then
+        return dxDebug("[removePropertyListener] Property listener does not exist", string.format("property: %s", property)) and false
+    end
+
+    self.propertyListeners[property] = nil
+    dxDebug("[removePropertyListener] Removed property listener", string.format("property: %s", property))
+    return true
 end
 
 -- *******************************************************************
@@ -323,7 +326,7 @@ end
 
 -- *******************************************************************
 
-function DxElement:addRenderFunction(func, preRender, ...)
+function DxElement:addRenderFunction(func, preRender, protected, ...)
     if (type(func) ~= "function") then
         return false
     end
@@ -337,7 +340,11 @@ function DxElement:addRenderFunction(func, preRender, ...)
         return false
     end
 
-    self.renderFunctions[renderType][func] = {...}
+    self.renderFunctions[renderType][func] = {
+        protected = protected, 
+        args = {...}
+    }
+
     dxDebug("Added render function", renderType, func)
     return true
 end
@@ -363,23 +370,31 @@ end
 -- *******************************************************************
 
 function DxElement:render()
-    for func, args in pairs(self.renderFunctions.render) do
-        func(unpack(args))
+    self:calculateColor()
+    self:calculateSize()
+    self:calculatePosition()
+
+    for func, data in pairs(self.renderFunctions.render) do
+        func(unpack(data.args))
     end
 
-    for i = #self.children, 1, -1 do
-        local child = self.children[i]
-        child:render()
+    if (self.renderWithChildren) then
+        for i = #self.children, 1, -1 do
+            local child = self.children[i]
+            child:render()
+        end
     end
 end
 
 function DxElement:preRender()
-    for func, args in pairs(self.renderFunctions.preRender) do
-        func(unpack(args))
+    for func, data in pairs(self.renderFunctions.preRender) do
+        func(unpack(data.args))
     end
 
-    for i, child in ipairs(self.children) do
-        child:preRender()
+    if (self.renderWithChildren) then
+        for i, child in ipairs(self.children) do
+            child:preRender()
+        end
     end
 end
 
@@ -467,16 +482,25 @@ function DxElement:setChild(child)
     end
 
     child:setIndex(1)
+
+    if (self.onChildAdded) then
+        self:onChildAdded(child)
+    end
+
     return true
 end
 
-function DxElement:removeChild(c)
-    if (not isDxElement(c)) then
+function DxElement:removeChild(child)
+    if (not isDxElement(child)) then
         return false
     end
 
-    for i, child in ipairs(self.children) do
-        if (c == child) then
+    if (self.onChildRemoved) then
+        self:onChildRemoved(child)
+    end
+
+    for i, c in ipairs(self.children) do
+        if (child == c) then
             return table.remove(self.children, i)
         end
     end
@@ -604,26 +628,32 @@ function DxElement:calculatePosition()
         end
     end
 
+    -- Add our main offsets (set/getPositionOffset)
+    offsetX = offsetX + self.offsetX
+    offsetY = offsetY + self.offsetY
+
     self.x, self.y = self.parent and (self.baseX + self.parent.x + offsetX) or (self.baseX + offsetX), self.parent and (self.baseY + self.parent.y + offsetY) or (self.baseY + offsetY)
 
     if (self:getProperty("force_in_bounds")) then
-        local bounds = self:getBounds()
-        local parentBounds = self:getParentBounds()
+        if (self:getParent() and self:getParent():getType() ~= DX_SCROLLPANE) then
+            local bounds = self:getBounds()
+            local parentBounds = self:getParentBounds()
 
-        if (bounds.x.min < parentBounds.x.min) then
-            self.x = parentBounds.x.min
-        end
+            if (bounds.x.min < parentBounds.x.min) then
+                self.x = parentBounds.x.min
+            end
 
-        if (bounds.x.max > parentBounds.x.max) then
-            self.x = parentBounds.x.max - self.width
-        end
+            if (bounds.x.max > parentBounds.x.max) then
+                self.x = parentBounds.x.max - self.width
+            end
 
-        if (bounds.y.min < parentBounds.y.min) then
-            self.y = parentBounds.y.min
-        end
+            if (bounds.y.min < parentBounds.y.min) then
+                self.y = parentBounds.y.min
+            end
 
-        if (bounds.y.max > parentBounds.y.max) then
-            self.y = parentBounds.y.max - self.height
+            if (bounds.y.max > parentBounds.y.max) then
+                self.y = parentBounds.y.max - self.height
+            end
         end
     end
 end
@@ -633,6 +663,20 @@ function DxElement:calculateSize()
 end
 
 -- *******************************************************************
+
+function DxElement:setPositionOffset(x, y)
+    self.offsetX, self.offsetY = tonumber(x) and x or self.offsetX, tonumber(y) and y or self.offsetY
+end
+
+function DxElement:getPositionOffset()
+    return self.offsetX, self.offsetY
+end
+
+-- *******************************************************************
+
+function DxElement:getParent()
+    return self.parent
+end
 
 function DxElement:getParentBounds(relative)
     if (not self.parent) then
@@ -732,6 +776,12 @@ function DxElement:getChildrenByType(elementType)
 	end
 	
 	return children
+end
+
+-- *******************************************************************
+
+function DxElement:getType()
+    return self.type
 end
 
 -- *******************************************************************

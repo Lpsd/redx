@@ -1,6 +1,8 @@
 <meta>
     <info type="script" description="DX Library" author="Lpsd" />
 
+    <min_mta_version server="1.5.2-9.07903" client="1.5.2-9.07903" />
+
     <!-- Files -->
     <file src="default.properties" />
     
@@ -14,6 +16,7 @@
     <!-- Client -->
     <script src="client/init.lua" type="client" />
     <script src="client/properties.lua" type="client" />
+    <script src="client/utils.lua" type="client" />
         <!-- Classes -->
         <script src="client/classes/Core.lua" type="client" />
         <script src="client/classes/Renderer.lua" type="client" />
@@ -24,6 +27,7 @@
 
             <!-- Elements -->
             <script src="client/classes/elements/DxElement.lua" type="client" />
-            <script src="client/classes/elements/DxScrollPane.lua" type="client" />
             <script src="client/classes/elements/DxRect.lua" type="client" />
+            <script src="client/classes/elements/DxScrollBar.lua" type="client" />
+            <script src="client/classes/elements/DxScrollPane.lua" type="client" />
 </meta>

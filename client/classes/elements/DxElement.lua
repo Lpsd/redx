@@ -128,13 +128,15 @@ end
 
 -- *******************************************************************
 
+function DxElement:forceUpdate()
+    self.update = getTickCount()
+end
+
+-- *******************************************************************
+
 function DxElement:addPropertyListener(property)
     if (self.propertyListeners[property]) then
         return dxDebug("[addPropertyListener] Property listener already active", string.format("property: %s", property)) and false
-    end
-
-    if (not self[property]) then
-        return dxDebug("[addPropertyListener] Property does not exist", string.format("property: %s", property)) and false
     end
 
     self.propertyListeners[property] = true
@@ -596,6 +598,8 @@ function DxElement:setColor(r, g, b, a)
     self.color.default.g = g and g or self.color.default.g
     self.color.default.b = b and b or self.color.default.b
     self.color.default.a = a and a or self.color.default.a
+
+    self:forceUpdate()
 
     return true
 end

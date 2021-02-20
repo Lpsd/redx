@@ -49,6 +49,7 @@ function DxScrollPane:onChildAdded(child)
 
     child:addPropertyListener("baseX")
     child:addPropertyListener("baseY")
+    child:addPropertyListener("update")
 
     self:updateRenderTarget()
 end
@@ -58,6 +59,7 @@ function DxScrollPane:onChildRemoved(child)
 
     child:removePropertyListener("baseX")
     child:removePropertyListener("baseY")
+    child:removePropertyListener("update")
 
     self:updateRenderTarget()
 end

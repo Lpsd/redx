@@ -46,11 +46,8 @@ function dxTest()
     scrollpane:setColor(255, 255, 255, 255)
     scrollpane:setProperty("draggable_children", true)
 
-    item = DxRect:new(135, 135, 75, 75)
+    item = DxRect:new(135, 135, 75, 75, false, scrollpane)
     item:setColor(255, 0, 0, 255)
-    item:setParent(scrollpane)
-
-    scrollbar = DxScrollBar:new(500, 500, 100, 35, false, nil, "vertical")
 end
 
 -- *******************************************************************

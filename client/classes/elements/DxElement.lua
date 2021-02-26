@@ -178,14 +178,17 @@ function DxElement:clickLeft(state)
         if (clickOrder) then
             self:bringToFront()
         end
+        
+        return true
     else
         if (isFocusedElement(self)) then
             self.dragging = false
             self.baseX, self.baseY = self.x - (self.parent and self.parent.baseX or 0), self.y - (self.parent and self.parent.baseY or 0)
+            return true
         end
     end
 
-    return true
+    return false
 end
 
 function DxElement:clickRight(state)
@@ -407,24 +410,13 @@ function DxElement:isObstructed()
 end
 
 function DxElement:getObstructingElement()
-    if (self:isRoot()) then
-        local elementIndex = 0
-        for i, element in ipairs(DxRootElements) do
-            if (element.index < self.index) then
-                if (isMouseInPosition(element.x, element.y, element.width, element.height)) then
-                    if (elementIndex == 0) then
-                        elementIndex = element.index
-                    end
-
-                    if (not elementIndex) or (element.index < elementIndex) then
-                        elementIndex = element.index
-                    end
-                end
+    local elementIndex = 0
+    local parentRoot = self:getRootElement()
+    for i, element in ipairs(DxRootElements) do
+        if (element.index < parentRoot.index) then
+            if (isMouseInPosition(element.x, element.y, element.width, element.height)) then
+                return element
             end
-        end
-
-        if (elementIndex ~= 0) and (elementIndex ~= self.index) then
-            return DxRootElements[elementIndex]
         end
     end
 
@@ -441,7 +433,7 @@ function DxElement:getObstructingElement()
         end
     end
 
-    if (childIndex ~= 0) then
+    if (childIndex ~= 0) and (childIndex < self.index) then
         return self.children[childIndex]
     end
 
@@ -786,6 +778,12 @@ end
 
 function DxElement:getType()
     return self.type
+end
+
+-- *******************************************************************
+
+function DxElement:getRootElement()
+    return self.parent and self.parent:getRootElement() or self
 end
 
 -- *******************************************************************

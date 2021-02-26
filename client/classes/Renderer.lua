@@ -49,9 +49,11 @@ function Renderer:handleClick(button, state, tbl)
             if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                 if (not element:isObstructed()) then
                     local parentClickArea = element:getParent() and element.parent:getAbsoluteClickArea() or false
-                    if (parentClickArea) and (isMouseInPosition(parentClickArea.x, parentClickArea.y, parentClickArea.width, parentClickArea.height)) or (not parentClickArea) then
+                    if (parentClickArea and isMouseInPosition(parentClickArea.x, parentClickArea.y, parentClickArea.width, parentClickArea.height)) or (not parentClickArea) then
                         DxFocusedElement = element
-                        return element["click"..button](element, (state == "down") and true or false)
+                        if (element["click"..button](element, (state == "down") and true or false)) then
+                            return true
+                        end
                     end
                 end
             end

@@ -47,8 +47,6 @@ end
 function DxScrollPane:onChildAdded(child)
     Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(child, self.fOnPropertyChange)
 
-    child:addPropertyListener("baseX")
-    child:addPropertyListener("baseY")
     child:addPropertyListener("update")
 
     self:updateRenderTarget()
@@ -57,8 +55,6 @@ end
 function DxScrollPane:onChildRemoved(child)
     Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):removeHandler(child, self.fOnPropertyChange)
 
-    child:removePropertyListener("baseX")
-    child:removePropertyListener("baseY")
     child:removePropertyListener("update")
 
     self:updateRenderTarget()

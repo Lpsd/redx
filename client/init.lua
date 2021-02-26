@@ -43,11 +43,18 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 
 function dxTest()
     scrollpane = DxScrollPane:new(300, 300, 200, 200)
+
+    scrollpane:setDraggable(true)
+    scrollpane:setDraggableChildren(true)
     scrollpane:setColor(255, 255, 255, 255)
-    scrollpane:setProperty("draggable_children", true)
 
     item = DxRect:new(135, 135, 75, 75, false, scrollpane)
     item:setColor(255, 0, 0, 255)
+
+    item2 = DxRect:new(55, 55, 75, 75, false, scrollpane)
+    item2:setColor(0, 255, 0, 255)
+
+    scrollbar = DxScrollBar:new(550, 300, 25, 200)
 end
 
 -- *******************************************************************

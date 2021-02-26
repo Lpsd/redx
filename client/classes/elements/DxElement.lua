@@ -52,16 +52,16 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self.color = {
         default = {
-            r = 0,
-            g = 0,
-            b = 0,
-            a = 0
+            r = 255,
+            g = 255,
+            b = 255,
+            a = 255
         },
         realtime = {
-            r = 0, 
-            g = 0, 
-            b = 0, 
-            a = 0
+            r = 255, 
+            g = 255, 
+            b = 255, 
+            a = 255
         }
     }
 
@@ -70,7 +70,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self.scrollpane = false
 
-    self.properties = DEFAULT_PROPERTIES
+    self.properties = deepcopy(DEFAULT_PROPERTIES)
 
     self.events = {}
 
@@ -107,9 +107,8 @@ end
 -- *******************************************************************
 
 function DxElement:get(property)
-    local inheritedMethods = getmetatable(self).__class
-    local methods = getmetatable(getmetatable(self).__class).__super[1]
-    return inheritedMethods[property] or methods[property] or rawget(self.data, property)
+    local class = getmetatable(self).__class
+    return class[property] or rawget(self.data, property)
 end
 
 function DxElement:set(property, newValue)
@@ -183,7 +182,7 @@ function DxElement:clickLeft(state)
     else
         if (isFocusedElement(self)) then
             self.dragging = false
-            self.baseX, self.baseY = self.x - (self.parent and self.parent.baseX or 0), self.y - (self.parent and self.parent.baseY or 0)
+            self.baseX, self.baseY = self.x - (self.parent and self.parent.x or 0), self.y - (self.parent and self.parent.y or 0)
             return true
         end
     end
@@ -202,6 +201,14 @@ function DxElement:clickMiddle(state)
 end
 
 -- *******************************************************************
+
+function DxElement:setDraggable(state)
+    return self:setProperty("draggable", state and true or false)
+end
+
+function DxElement:setDraggableChildren(state)
+    return self:setProperty("draggable_children", state and true or false)
+end
 
 function DxElement:setDragArea(x, y, width, height)
     x, y, width, height = (x or self.dragArea.x), (y or self.dragArea.y), (width or self.dragArea.width), (height or self.dragArea.height)
@@ -410,7 +417,6 @@ function DxElement:isObstructed()
 end
 
 function DxElement:getObstructingElement()
-    local elementIndex = 0
     local parentRoot = self:getRootElement()
     for i, element in ipairs(DxRootElements) do
         if (element.index < parentRoot.index) then
@@ -420,21 +426,10 @@ function DxElement:getObstructingElement()
         end
     end
 
-    local childIndex = 0
     for i, child in ipairs(self.children) do
         if (isMouseInPosition(child.x, child.y, child.width, child.height)) then
-            if (childIndex == 0) then
-                childIndex = child.index
-            end
-
-            if (not childIndex) or (child.index < childIndex) then
-                childIndex = child.index
-            end
+            return child
         end
-    end
-
-    if (childIndex ~= 0) and (childIndex < self.index) then
-        return self.children[childIndex]
     end
 
     return false

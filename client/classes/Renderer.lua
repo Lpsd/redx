@@ -40,6 +40,7 @@ function Renderer:handleClick(button, state, tbl)
         if (DxFocusedElement) then
             DxFocusedElement["clickLeft"](DxFocusedElement, false)
             DxFocusedElement = false
+            return true
         end
     end
 

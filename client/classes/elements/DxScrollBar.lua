@@ -22,16 +22,13 @@ function DxScrollBar:constructor()
     self.trackbar:setDraggableChildren(true)
 
     self.handle = {
-        size = {
-            min = (self.buttonSize / 2),
-            max = (self.trackbar.height),
-            current = self.trackbar.height
-        },
+        size = 50, --example handle size for now
         offset = 0
     }
 
-    self.handle.element = DxRect:new(0, 0, self.width, self.handle.size.min, false, self.trackbar)
+    self.handle.element = DxRect:new(0, 0, self:isVertical() and self.width or self.handle.size, self:isVertical() and self.handle.size or self.height, false, self.trackbar)
     self.handle.element:setColor(11, 11, 11)
+    self.handle.element:setProperty("click_propagate", true)
 end
 
 -- *******************************************************************

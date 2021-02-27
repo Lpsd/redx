@@ -86,11 +86,6 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self:setPosition(x, y, relative)
     self:setSize(width, height, relative)
-    
-    -- Some processing needs to bypass addRenderFunction (the renderer for these needs to be able to be called dynamically, where as the processing below needs to be done at all times)
-    addEventHandler("onClientRender", root, bind(self.calculateColor, self))
-    addEventHandler("onClientRender", root, bind(self.calculatePosition, self))
-    addEventHandler("onClientRender", root, bind(self.calculateSize, self))
 
     self.index = 0
 
@@ -156,7 +151,7 @@ end
 -- *******************************************************************
 
 function DxElement:clickLeft(state)
-    dxDebug("Left click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)))
+    dxDebug("Left click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)), self:getType())
 
     local isRoot = self:isRoot()
     local cursorX, cursorY = getAbsoluteCursorPosition()
@@ -180,11 +175,15 @@ function DxElement:clickLeft(state)
         
         return true
     else
-        if (isFocusedElement(self)) then
-            self.dragging = false
+        self.dragging = false
+
+        if (self:getRootElement().type == DX_SCROLLPANE) then
+            self.baseX, self.baseY = self.x, self.y
+        else
             self.baseX, self.baseY = self.x - (self.parent and self.parent.x or 0), self.y - (self.parent and self.parent.y or 0)
-            return true
         end
+
+        return true
     end
 
     return false
@@ -416,19 +415,16 @@ function DxElement:isObstructed()
     return self:getObstructingElement() and true or false
 end
 
-function DxElement:getObstructingElement()
-    local parentRoot = self:getRootElement()
-    for i, element in ipairs(DxRootElements) do
-        if (element.index < parentRoot.index) then
-            if (isMouseInPosition(element.x, element.y, element.width, element.height)) then
-                return element
-            end
-        end
-    end
-
+function DxElement:getObstructingChild()
     for i, child in ipairs(self.children) do
-        if (isMouseInPosition(child.x, child.y, child.width, child.height)) then
-            return child
+        local clickArea = child:getAbsoluteClickArea()
+
+        if (self:getRootElement().type == DX_SCROLLPANE) then
+            clickArea.x, clickArea.y = clickArea.x + self.x, clickArea.y + self.y
+        end
+
+        if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
+            return child:getObstructingChild() or child
         end
     end
 
@@ -626,7 +622,7 @@ function DxElement:calculatePosition()
     self.x, self.y = self.parent and (self.baseX + self.parent.x + offsetX) or (self.baseX + offsetX), self.parent and (self.baseY + self.parent.y + offsetY) or (self.baseY + offsetY)
 
     if (self:getProperty("force_in_bounds")) then
-        if (self:getParent() and self:getParent():getType() ~= DX_SCROLLPANE) then
+        if (self:getParent() and self:getParent().type ~= DX_SCROLLPANE) then
             local bounds = self:getBounds()
             local parentBounds = self:getParentBounds()
 
@@ -772,7 +768,7 @@ end
 -- *******************************************************************
 
 function DxElement:getType()
-    return self.type
+    return DX_TYPES[self.type] and "DX_" .. DX_TYPES[self.type] or false
 end
 
 -- *******************************************************************

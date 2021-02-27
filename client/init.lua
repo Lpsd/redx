@@ -5,17 +5,19 @@
 SCREEN_WIDTH, SCREEN_HEIGHT = false, false
 DEBUG = true
 
-enum({
+DX_TYPES = {
     "RECT",
     "SCROLLPANE",
     "SCROLLBAR"
-}, "DX")
+}
+
+enum(DX_TYPES, "DX")
 
 -- *******************************************************************
 
 -- Store all DxElements
 DxRootElements = {}
-DxFocusedElement = false
+DxFocusedElements = {}
 
 DxCore = false
 
@@ -54,7 +56,7 @@ function dxTest()
     item2 = DxRect:new(55, 55, 75, 75, false, scrollpane)
     item2:setColor(0, 255, 0, 255)
 
-    scrollbar = DxScrollBar:new(550, 300, 25, 200)
+    scrollbar = DxScrollBar:new(550, 300, 200, 25)
 end
 
 -- *******************************************************************
@@ -66,8 +68,13 @@ end)
 -- *******************************************************************
 
 -- Helper functions
-function isFocusedElement(element)
-    return DxFocusedElement == element
+function isFocusedElement(e)
+    for i, element in ipairs(DxFocusedElements) do
+        if e == element then
+            return true
+        end
+    end
+    return false
 end
 
 function refreshElementIndexes()

@@ -55,8 +55,13 @@ function dxTest()
 
     item2 = DxRect:new(55, 55, 75, 75, false, scrollpane)
     item2:setColor(0, 255, 0, 255)
+    item2:setClickPropagationEnabled(true)
 
-    scrollbar = DxScrollBar:new(550, 300, 200, 25)
+    scrollpane2 = DxScrollPane:new(300, 300, 200, 200)
+
+    scrollpane2:setDraggable(true)
+    scrollpane2:setDraggableChildren(true)
+    scrollpane2:setColor(15, 192, 255, 255)   
 end
 
 -- *******************************************************************

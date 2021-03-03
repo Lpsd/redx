@@ -55,7 +55,7 @@ function Renderer:handleClick(button, state)
                         table.insert(DxFocusedElements, element)
                     end
 
-                    element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false)
+                    element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false, true)
                 end
 
                 if (not isFocusedElement(obstructingChild)) then

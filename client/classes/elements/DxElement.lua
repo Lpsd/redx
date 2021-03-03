@@ -150,7 +150,7 @@ end
 
 -- *******************************************************************
 
-function DxElement:clickLeft(state)
+function DxElement:clickLeft(state, propagated)
     dxDebug("Left click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)), self:getType())
 
     local isRoot = self:isRoot()
@@ -159,13 +159,15 @@ function DxElement:clickLeft(state)
     if (state) then
         self.clickInitialX, self.clickInitialY = cursorX, cursorY
 
-        if (isRoot) and (self:getProperty("draggable")) then
-            local dragArea = self:getAbsoluteDragArea()
-            if (isMouseInPosition(dragArea.x, dragArea.y, dragArea.width, dragArea.height)) then
+        if (not propagated) then
+            if (isRoot) and (self:getProperty("draggable")) then
+                local dragArea = self:getAbsoluteDragArea()
+                if (isMouseInPosition(dragArea.x, dragArea.y, dragArea.width, dragArea.height)) then
+                    self.dragging = true
+                end
+            elseif (not isRoot) and (self.parent:getProperty("draggable_children")) then
                 self.dragging = true
             end
-        elseif (not isRoot) and (self.parent:getProperty("draggable_children")) then
-            self.dragging = true
         end
 
         local clickOrder = isRoot and self:getProperty("click_order") or self:getProperty("click_order_children")
@@ -189,12 +191,12 @@ function DxElement:clickLeft(state)
     return false
 end
 
-function DxElement:clickRight(state)
+function DxElement:clickRight(state, propagated)
     dxDebug("Right click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)))
     return true
 end
 
-function DxElement:clickMiddle(state)
+function DxElement:clickMiddle(state, propagated)
     dxDebug("Middle click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)))
     return true
 end
@@ -412,7 +414,7 @@ end
 -- *******************************************************************
 
 function DxElement:isObstructed()
-    return self:getObstructingElement() and true or false
+    return self:getObstructingChild() and true or false
 end
 
 function DxElement:getObstructingChild()
@@ -771,10 +773,24 @@ function DxElement:getType()
     return DX_TYPES[self.type] and "DX_" .. DX_TYPES[self.type] or false
 end
 
+function DxElement:getEnumerableType()
+    return self.type
+end
+
 -- *******************************************************************
 
 function DxElement:getRootElement()
     return self.parent and self.parent:getRootElement() or self
+end
+
+-- *******************************************************************
+
+function DxElement:setClickPropagationEnabled(state)
+    return self:setProperty("click_propagate", state and true or false)
+end
+
+function DxElement:getClickPropagationEnabled()
+    return self:getProperty("click_propagate")
 end
 
 -- *******************************************************************

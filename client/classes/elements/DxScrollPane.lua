@@ -9,16 +9,40 @@ function DxScrollPane:constructor()
     self.type = DX_SCROLLPANE
     self.renderTarget = dxCreateRenderTarget(self.width, self.height, true)
 
+    self:setClickEnabled(false)
+
     self.renderWithChildren = false
 
     self:addRenderFunction(self.drawRenderTarget)
     self:addRenderFunction(self.processUpdate)
+
+    self.scrollbar = false
 
     self.color.default.a = 50
 
     self.fOnPropertyChange = bind(self.onPropertyChange, self)
 
     Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(self, self.fOnPropertyChange)
+    self:setClickPropagationEnabled(true)
+end
+
+-- *******************************************************************
+
+function DxScrollPane:getScrollBar()
+    return self.scrollbar
+end
+
+function DxScrollPane:setScrollBar(scrollbar)
+    if (scrollbar ~= false) and (scrollbar ~= nil) and (not isDxElement(scrollbar)) then
+        return false
+    end
+
+    if (isDxElement(self.scrollbar)) then
+        self.scrollbar:destroy()
+    end
+
+    self.scrollbar = scrollbar
+    return true
 end
 
 -- *******************************************************************

@@ -8,7 +8,8 @@ DEBUG = true
 DX_TYPES = {
     "RECT",
     "SCROLLPANE",
-    "SCROLLBAR"
+    "SCROLLBAR",
+    "WINDOW"
 }
 
 enum(DX_TYPES, "DX")
@@ -44,24 +45,17 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 -- *******************************************************************
 
 function dxTest()
-    scrollpane = DxScrollPane:new(300, 300, 200, 200)
+    window = DxWindow:new(300, 300, 200, 200)
 
-    scrollpane:setDraggable(true)
-    scrollpane:setDraggableChildren(true)
-    scrollpane:setColor(255, 255, 255, 255)
+    window:setDraggable(true)
+    window:setDraggableChildren(true)
+    window:setColor(255, 255, 255, 255)
 
-    item = DxRect:new(135, 135, 75, 75, false, scrollpane)
+    item = DxRect:new(135, 135, 75, 75, false, window)
     item:setColor(255, 0, 0, 255)
 
-    item2 = DxRect:new(55, 55, 75, 75, false, scrollpane)
-    item2:setColor(0, 255, 0, 255)
-    item2:setClickPropagationEnabled(true)
-
-    scrollpane2 = DxScrollPane:new(300, 300, 200, 200)
-
-    scrollpane2:setDraggable(true)
-    scrollpane2:setDraggableChildren(true)
-    scrollpane2:setColor(15, 192, 255, 255)   
+    iprint("window children", #window.children)
+    iprint("scrollpane children", #window.scrollpane.children)
 end
 
 -- *******************************************************************

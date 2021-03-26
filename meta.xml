@@ -30,4 +30,5 @@
             <script src="client/classes/elements/DxRect.lua" type="client" />
             <script src="client/classes/elements/DxScrollBar.lua" type="client" />
             <script src="client/classes/elements/DxScrollPane.lua" type="client" />
+            <script src="client/classes/elements/DxWindow.lua" type="client" />
 </meta>

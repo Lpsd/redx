@@ -471,7 +471,11 @@ function DxElement:setChild(child)
     child:setIndex(1)
 
     if (self.onChildAdded) then
-        self:onChildAdded(child)
+        if (not child.type) then
+            child.__notifyParentInit = true
+        else
+            self:onChildAdded(child)
+        end
     end
 
     return true
@@ -482,15 +486,17 @@ function DxElement:removeChild(child)
         return false
     end
 
-    if (self.onChildRemoved) then
-        self:onChildRemoved(child)
-    end
-
     for i, c in ipairs(self.children) do
         if (child == c) then
+            if (self.onChildRemoved) then
+                self:onChildRemoved(child)
+            end
+
             return table.remove(self.children, i)
         end
     end
+
+
 end
 
 -- *******************************************************************
@@ -781,6 +787,16 @@ end
 
 function DxElement:getRootElement()
     return self.parent and self.parent:getRootElement() or self
+end
+
+-- *******************************************************************
+
+function DxElement:setClickEnabled(state)
+    return self:setProperty("click_enabled", state and true or false)
+end
+
+function DxElement:getClickEnabled()
+    return self:getProperty("click_enabled")
 end
 
 -- *******************************************************************

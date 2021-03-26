@@ -44,25 +44,38 @@ function Renderer:handleClick(button, state)
     end
 
     for i, element in ipairs(DxRootElements) do
-        local clickArea = element:getAbsoluteClickArea()
+        local inheritedBounds = element:getInheritedBounds()
 
-        if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
+        if (isMouseInPosition(element.x + inheritedBounds.x.min, element.y + inheritedBounds.y.min, inheritedBounds.x.max, inheritedBounds.y.max)) then
             local obstructingChild = element:getObstructingChild()
 
             if (obstructingChild) then
                 if (obstructingChild:getProperty("click_propagate")) then
-                    if (not isFocusedElement(element)) then
-                        table.insert(DxFocusedElements, element)
+                    if (element:getClickEnabled()) then
+                        local clickArea = element:getAbsoluteClickArea()
+
+                        if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
+                            if (not isFocusedElement(element)) then
+                                table.insert(DxFocusedElements, element)
+                            end
+
+                            element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false, true)
+                        end
                     end
-
-                    element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false, true)
                 end
 
-                if (not isFocusedElement(obstructingChild)) then
-                    table.insert(DxFocusedElements, obstructingChild)
-                end
+                if (obstructingChild:getClickEnabled()) then
+                    local clickArea = obstructingChild:getAbsoluteClickArea()
 
-                return obstructingChild["click"..button:gsub("^%l", string.upper)](obstructingChild, (state == "down") and true or false)
+                    if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
+                        if (not isFocusedElement(obstructingChild)) then
+                            table.insert(DxFocusedElements, obstructingChild)
+                        end
+
+                        
+                        return obstructingChild["click"..button:gsub("^%l", string.upper)](obstructingChild, (state == "down") and true or false)
+                    end
+                end
             end
 
             if (not isFocusedElement(element)) then

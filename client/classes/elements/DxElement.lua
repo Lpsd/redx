@@ -7,13 +7,14 @@ DxElement = inherit(Class)
 
 function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     self.data = {}
-    self.propertyListeners = {}
 
     -- Used for property listeners
     local mt = getmetatable(self)
     mt.__newindex = self.set
     mt.__index = self.get
     setmetatable(self, mt)
+
+    self.propertyListeners = {}
 
     self.id = string.random(6) .. getTickCount()
     self.name = "dx-" .. self.id
@@ -124,8 +125,8 @@ end
 function DxElement:set(property, newValue)
     rawset(self.data, property, newValue)
 
-    if (self.propertyListeners[property]) then
-        local previousValue = self["_prev_"..property]
+    if (rawget(self.data, "propertyListeners")[property]) then
+        local previousValue = rawget(self.data, "_prev_"..property)
         
         if (previousValue ~= newValue) then
             Core:getInstance():getEventManager():triggerEvent("onDxPropertyChange", self, property, previousValue, newValue)
@@ -473,8 +474,6 @@ end
 -- *******************************************************************
 
 function DxElement:setParent(parent)
-    parent = parent and parent or false
-
     if (parent) and (not isDxElement(parent)) then
         return false
     end

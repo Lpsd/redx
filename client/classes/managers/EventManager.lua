@@ -51,8 +51,6 @@ function EventManager:triggerEvent(eventName, sourceElement, ...)
         return false
     end
 
-    source = sourceElement
-
     for i, func in ipairs(functions) do
         func(...)
     end

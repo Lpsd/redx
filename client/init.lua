@@ -61,14 +61,10 @@ function dxTest()
     item3 = DxRect:new(35, 35, 75, 75, false, item2)
     item3:setColor(66, 66, 66)
 
-    -------------------------------------------
-    -- This crashes the client for some reason?
-    -------------------------------------------
-    -- setTimer(function()
-    --     item3:setParent(item)
-    -- end, 2000, 1)
+    setTimer(function()
+        item3:setParent(item)
+    end, 2000, 1)
 end
-
 -- *******************************************************************
 
 bindKey("F2", "down", function()

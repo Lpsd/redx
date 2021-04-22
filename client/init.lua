@@ -9,7 +9,7 @@ DX_TYPES = {
     "RECT",
     "SCROLLPANE",
     "SCROLLBAR",
-    "WINDOW"
+    "WINDOW",
 }
 
 enum(DX_TYPES, "DX")
@@ -49,13 +49,24 @@ function dxTest()
 
     window:setDraggable(true)
     window:setDraggableChildren(true)
-    window:setColor(255, 255, 255, 255)
 
-    item = DxRect:new(135, 135, 75, 75, false, window)
-    item:setColor(255, 0, 0, 255)
+    item = DxRect:new(75, 75, 75, 75, false, window)
 
-    iprint("window children", #window.children)
-    iprint("scrollpane children", #window.scrollpane.children)
+    window2 = DxWindow:new(600, 300, 200, 200)
+
+    window2:setDraggable(true)
+    window2:setDraggableChildren(true)
+
+    item2 = DxRect:new(35, 35, 75, 75, false, window2)
+    item3 = DxRect:new(35, 35, 75, 75, false, item2)
+    item3:setColor(66, 66, 66)
+
+    -------------------------------------------
+    -- This crashes the client for some reason?
+    -------------------------------------------
+    -- setTimer(function()
+    --     item3:setParent(item)
+    -- end, 2000, 1)
 end
 
 -- *******************************************************************

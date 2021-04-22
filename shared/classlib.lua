@@ -63,10 +63,6 @@ function enew(element, class, ...)
 		rawget(class, "constructor")(element, unpack(args))
 	end
 	element.constructor = false
-
-    if (element.__notifyParentInit) then
-        element.parent:onChildAdded(element)
-    end
 	
 	-- Add the destruction handler
 	if isElement(element) then 
@@ -131,6 +127,13 @@ function new(class, ...)
 		rawget(class, "constructor")(instance, unpack(args))
 	end
 	instance.constructor = false
+
+    if (instance.__parent) then
+        instance:setParent(instance.__parent)
+        instance.__parent = nil
+    end
+
+    instance.__init = true
 
 	return instance
 end

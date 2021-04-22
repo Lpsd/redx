@@ -18,12 +18,20 @@ function DxScrollPane:constructor()
 
     self.scrollbar = false
 
-    self.color.default.a = 50
+    self.color.default.a = 0
+
+    self.childPropertyListeners = {
+        "update",
+        "baseX",
+        "baseY"
+    }
 
     self.fOnPropertyChange = bind(self.onPropertyChange, self)
 
     Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(self, self.fOnPropertyChange)
     self:setClickPropagationEnabled(true)
+
+    self:setProperty("draggable_children", true)
 end
 
 -- *******************************************************************
@@ -69,21 +77,39 @@ end
 -- *******************************************************************
 
 function DxScrollPane:onChildAdded(child)
-    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(child, self.fOnPropertyChange)
-
-    child:addPropertyListener("update")
-
-    self:updateRenderTarget()
+    self:hookChild(child)
 end
 
 function DxScrollPane:onChildRemoved(child)
-    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):removeHandler(child, self.fOnPropertyChange)
+    self:unhookChild(child)
+end
 
-    child:removePropertyListener("update")
+function DxScrollPane:onChildInherited(child)
+    self:hookChild(child)
+end
+function DxScrollPane:onChildDisinherited(child)
+    self:unhookChild(child)
+end
+
+function DxScrollPane:hookChild(child)
+    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(child, self.fOnPropertyChange)
+
+    for i, property in ipairs(self.childPropertyListeners) do
+        child:addPropertyListener(property)
+    end
 
     self:updateRenderTarget()
 end
 
+function DxScrollPane:unhookChild(child)
+    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):removeHandler(child, self.fOnPropertyChange)
+
+    for i, property in ipairs(self.childPropertyListeners) do
+        child:removePropertyListener(property)
+    end
+
+    self:updateRenderTarget()
+end
 
 -- *******************************************************************
 
@@ -108,7 +134,7 @@ function DxScrollPane:updateRenderTarget()
     for i = #self.children, 1, -1 do
         local child = self.children[i]
         child:setPositionOffset(-self.x, -self.y)
-        child:render()
+        child:render(true)
         child:setPositionOffset(0, 0)
     end
 

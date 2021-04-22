@@ -53,7 +53,6 @@ function Renderer:handleClick(button, state)
                 if (obstructingChild:getProperty("click_propagate")) then
                     if (element:getClickEnabled()) then
                         local clickArea = element:getAbsoluteClickArea()
-
                         if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                             if (not isFocusedElement(element)) then
                                 table.insert(DxFocusedElements, element)
@@ -66,12 +65,10 @@ function Renderer:handleClick(button, state)
 
                 if (obstructingChild:getClickEnabled()) then
                     local clickArea = obstructingChild:getAbsoluteClickArea()
-
                     if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                         if (not isFocusedElement(obstructingChild)) then
                             table.insert(DxFocusedElements, obstructingChild)
                         end
-
                         
                         return obstructingChild["click"..button:gsub("^%l", string.upper)](obstructingChild, (state == "down") and true or false)
                     end

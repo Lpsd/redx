@@ -58,12 +58,27 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
             a = 255
         },
         realtime = {
+            r = 0, 
+            g = 0, 
+            b = 0, 
+            a = 0
+        }
+    }
+
+    self.textColor = {
+        default = {
+            r = 255,
+            g = 255,
+            b = 255,
+            a = 255
+        },
+        realtime = {
             r = 255, 
             g = 255, 
             b = 255, 
             a = 255
         }
-    }
+    }    
 
     self.parent = false
     self.children = {}
@@ -87,9 +102,9 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     self:setPosition(x, y, relative)
     self:setSize(width, height, relative)
 
+    self.__parent = parent
     self.index = 0
 
-    self:setParent(parent)
     self:setIndex(1)
 
     return self
@@ -123,7 +138,7 @@ end
 -- *******************************************************************
 
 function DxElement:forceUpdate()
-    self.update = getTickCount()
+    self.update = tostring(getTickCount())
 end
 
 -- *******************************************************************
@@ -179,7 +194,7 @@ function DxElement:clickLeft(state, propagated)
     else
         self.dragging = false
 
-        if (self:getRootElement().type == DX_SCROLLPANE) then
+        if (self:inScrollPane()) then
             self.baseX, self.baseY = self.x, self.y
         else
             self.baseX, self.baseY = self.x - (self.parent and self.parent.x or 0), self.y - (self.parent and self.parent.y or 0)
@@ -261,12 +276,18 @@ function DxElement:getClickArea()
 end
 
 function DxElement:getAbsoluteClickArea()
-    return {
+    local area = {
         x = (self.x + self.clickArea.x),
         y = (self.y + self.clickArea.y),
         width = self.clickArea.width,
         height = self.clickArea.height
     }
+
+    if (self:inScrollPane()) then
+        area.x, area.y = area.x + self.parent.x, area.y + self.parent.y
+    end
+
+    return area
 end
 
 -- *******************************************************************
@@ -382,7 +403,7 @@ end
 
 -- *******************************************************************
 
-function DxElement:render()
+function DxElement:render(static)
     self:calculateColor()
     self:calculateSize()
     self:calculatePosition()
@@ -421,13 +442,29 @@ function DxElement:getObstructingChild()
     for i, child in ipairs(self.children) do
         local clickArea = child:getAbsoluteClickArea()
 
-        if (self:getRootElement().type == DX_SCROLLPANE) then
-            clickArea.x, clickArea.y = clickArea.x + self.x, clickArea.y + self.y
-        end
-
         if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
             return child:getObstructingChild() or child
         end
+    end
+
+    return false
+end
+
+-- *******************************************************************
+
+function DxElement:inScrollPane(parent)
+    parent = parent or self.parent
+
+    if (not parent) then
+        return false
+    end
+
+    if (parent.type == DX_SCROLLPANE) then
+        return true
+    end
+
+    if (parent.parent) then
+        return self:inScrollPane(parent.parent)
     end
 
     return false
@@ -450,7 +487,7 @@ function DxElement:setParent(parent)
         table.insert(DxRootElements, 1, self)
     end
 
-    if (not parent) and (self.parent) then
+    if (self.parent) then
         self.parent:removeChild(self)
     end
 
@@ -471,15 +508,36 @@ function DxElement:setChild(child)
     child:setIndex(1)
 
     if (self.onChildAdded) then
-        if (not child.type) then
-            child.__notifyParentInit = true
-        else
-            self:onChildAdded(child)
-        end
+        self:onChildAdded(child)
     end
+
+    self:_onChildInherited(child)
+
+    self:forceUpdate()
 
     return true
 end
+
+function DxElement:_onChildInherited(child)
+    if (self.parent) then
+        if (self.parent.onChildInherited) then
+            self.parent:onChildInherited(child)
+        end
+
+        return self.parent:_onChildInherited(child)
+    end
+end
+
+function DxElement:_onChildDisinherited(child)
+    if (self.parent) then
+        if (self.parent.onChildDisinherited) then
+            self.parent:onChildDisinherited(child)
+        end
+
+        return self.parent:_onChildDisinherited(child)
+    end
+end
+
 
 function DxElement:removeChild(child)
     if (not isDxElement(child)) then
@@ -492,11 +550,15 @@ function DxElement:removeChild(child)
                 self:onChildRemoved(child)
             end
 
-            return table.remove(self.children, i)
+            self:_onChildDisinherited(child)
+            
+            local remove = table.remove(self.children, i)
+            self:forceUpdate()
+            return remove
         end
     end
 
-
+    return false
 end
 
 -- *******************************************************************
@@ -590,6 +652,7 @@ function DxElement:setColor(r, g, b, a)
     self.color.default.b = b and b or self.color.default.b
     self.color.default.a = a and a or self.color.default.a
 
+    self:calculateColor()
     self:forceUpdate()
 
     return true
@@ -610,7 +673,7 @@ end
 
 function DxElement:calculateColor()
     -- Extra logic required later for color interpolation
-    self.color.realtime = self.color.default
+    self.color.realtime = self.color.default 
 end
 
 function DxElement:calculatePosition()
@@ -630,7 +693,7 @@ function DxElement:calculatePosition()
     self.x, self.y = self.parent and (self.baseX + self.parent.x + offsetX) or (self.baseX + offsetX), self.parent and (self.baseY + self.parent.y + offsetY) or (self.baseY + offsetY)
 
     if (self:getProperty("force_in_bounds")) then
-        if (self:getParent() and self:getParent().type ~= DX_SCROLLPANE) then
+        --if (self.parent:inScrollPane()) then
             local bounds = self:getBounds()
             local parentBounds = self:getParentBounds()
 
@@ -649,7 +712,7 @@ function DxElement:calculatePosition()
             if (bounds.y.max > parentBounds.y.max) then
                 self.y = parentBounds.y.max - self.height
             end
-        end
+        --end
     end
 end
 
@@ -698,22 +761,24 @@ function DxElement:getInheritedBounds()
     local bounds = self:getBounds(true)
 
     for i, child in ipairs(self:getInheritedChildren()) do
-        local x, y = child.x - self.x, child.y - self.y
+        if (not child:inScrollPane()) then
+            local x, y = child.x - self.x, child.y - self.y
 
-        if (x < bounds.x.min) then
-            bounds.x.min = x
-        end
+            if (x < bounds.x.min) then
+                bounds.x.min = x
+            end
 
-        if (y < bounds.y.min) then
-            bounds.y.min = y
-        end
+            if (y < bounds.y.min) then
+                bounds.y.min = y
+            end
 
-        if ((x + child.width) > bounds.x.max) then
-            bounds.x.max = (x + child.width)
-        end
+            if ((x + child.width) > bounds.x.max) then
+                bounds.x.max = (x + child.width)
+            end
 
-        if ((y + child.height) > bounds.y.max) then
-            bounds.y.max = (y + child.height)
+            if ((y + child.height) > bounds.y.max) then
+                bounds.y.max = (y + child.height)
+            end
         end
     end
 

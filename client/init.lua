@@ -45,7 +45,7 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 -- *******************************************************************
 
 function dxTest()
-    window = DxWindow:new(600, 300, 200, 200)
+    window = DxWindow:new(200, 200, 200, 200)
 
     window:setDraggable(true)
     window:setDraggableChildren(true)

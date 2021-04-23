@@ -790,27 +790,24 @@ function DxElement:getInheritedBounds()
     local bounds = self:getBounds(true)
     local scrollpane = self:inScrollPane()
     for i, child in ipairs(self:getInheritedChildren()) do
-        --if (not child:inScrollPane()) then
-            
-            local pos = child:getPositionRelativeToScreen()
-            local x, y = pos.x, pos.y
+        local pos = child:getPositionRelativeToScreen()
+        local x, y = child.x, child.y
 
-            if (x < bounds.x.min) then
-                bounds.x.min = x
-            end
+        if (x < bounds.x.min) then
+            bounds.x.min = x
+        end
 
-            if (y < bounds.y.min) then
-                bounds.y.min = y
-            end
+        if (y < bounds.y.min) then
+            bounds.y.min = y
+        end
 
-            if ((x + child.width) > bounds.x.max) then
-                bounds.x.max = (x + child.width) - (scrollpane and scrollpane.x or 0)
-            end
+        if ((x + child.width) > bounds.x.max) then
+            bounds.x.max = (x + child.width) + (scrollpane and scrollpane.x or 0)
+        end
 
-            if ((y + child.height) > bounds.y.max) then
-                bounds.y.max = (y + child.height) - (scrollpane and scrollpane.y or 0)
-            end
-        --end
+        if ((y + child.height) > bounds.y.max) then
+            bounds.y.max = (y + child.height) + (scrollpane and scrollpane.y or 0)
+        end
     end
 
     return bounds

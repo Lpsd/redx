@@ -37,8 +37,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
         y = 0,
         width = width,
         height = height,
-        defaultWidth = true,
-        defaultHeight = true
+        changed = false
     }    
 
     -- Relative drag area
@@ -47,8 +46,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
         y = 0,
         width = width,
         height = height,
-        defaultWidth = true,
-        defaultHeight = true
+        changed = false
     }
 
     self.color = {
@@ -195,7 +193,7 @@ function DxElement:clickLeft(state, propagated)
     else
         self.dragging = false
 
-        if (self:inScrollPane()) then
+        if (self.parent and self.parent.type == DX_SCROLLPANE) then
             self.baseX, self.baseY = self.x, self.y
         else
             self.baseX, self.baseY = self.x - (self.parent and self.parent.x or 0), self.y - (self.parent and self.parent.y or 0)
@@ -235,8 +233,7 @@ function DxElement:setDragArea(x, y, width, height)
         y = y,
         width = width,
         height = height,
-        defaultWidth = (width == self.dragArea.width),
-        defaultHeight = (height == self.dragArea.height)
+        changed = true
     }
 
     return true
@@ -247,12 +244,19 @@ function DxElement:getDragArea()
 end
 
 function DxElement:getAbsoluteDragArea()
-    return {
+    local area = {
         x = (self.x + self.dragArea.x),
         y = (self.y + self.dragArea.y),
         width = self.dragArea.width,
         height = self.dragArea.height
     }
+
+    local scrollpane = self:inScrollPane()
+    if (scrollpane) then
+        area.x, area.y = area.x + scrollpane.x, area.y + scrollpane.y
+    end
+    
+    return area
 end
 
 -- *******************************************************************
@@ -265,8 +269,7 @@ function DxElement:setClickArea(x, y, width, height)
         y = y,
         width = width,
         height = height,
-        defaultWidth = (width == self.clickArea.width),
-        defaultHeight = (height == self.clickArea.height)
+        changed = true
     }
 
     return true
@@ -284,8 +287,9 @@ function DxElement:getAbsoluteClickArea()
         height = self.clickArea.height
     }
 
-    if (self:inScrollPane()) then
-        area.x, area.y = area.x + self.parent.x, area.y + self.parent.y
+    local scrollpane = self:inScrollPane()
+    if (scrollpane) then
+        area.x, area.y = area.x + scrollpane.x, area.y + scrollpane.y
     end
 
     return area
@@ -319,8 +323,11 @@ function DxElement:setSize(width, height, relative)
 
     self.baseWidth, self.baseHeight = updatedWidth, updatedHeight
 
-    self.dragArea.width = self.dragArea.defaultWidth and self.baseWidth or self.dragArea.width
-    self.dragArea.height = self.dragArea.defaultHeight and self.baseHeight or self.dragArea.height
+    self.dragArea.width = self.dragArea.changed and self.dragArea.width or self.baseWidth
+    self.dragArea.height = self.dragArea.changed and self.dragArea.height or self.baseHeight
+
+    self.clickArea.width = self.clickArea.changed and self.clickArea.width or self.baseWidth
+    self.clickArea.height = self.clickArea.changed and self.clickArea.height or self.baseHeight    
 
     return true
 end
@@ -441,10 +448,17 @@ end
 
 function DxElement:getObstructingChild()
     for i, child in ipairs(self.children) do
-        local clickArea = child:getAbsoluteClickArea()
+        local bounds = child:getInheritedBounds()
+        local pos = child:getPositionRelativeToScreen()
+        
+        if (isMouseInPosition(pos.x + bounds.x.min, pos.y + bounds.y.min, bounds.x.max, bounds.y.max)) then
+            local obstructingChild = child:getObstructingChild()
 
-        if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
-            return child:getObstructingChild() or child
+            if (obstructingChild) then
+                return obstructingChild
+            elseif (isMouseInPosition(pos.x, pos.y, child.width, child.height)) then
+                return child
+            end
         end
     end
 
@@ -461,7 +475,7 @@ function DxElement:inScrollPane(parent)
     end
 
     if (parent.type == DX_SCROLLPANE) then
-        return true
+        return parent
     end
 
     if (parent.parent) then
@@ -493,13 +507,13 @@ function DxElement:setParent(parent)
     self.parent = parent
 
     if (self.parent) then
-        self.parent:setChild(self)
+        self.parent:addChild(self)
     end
 
     return true
 end
 
-function DxElement:setChild(child)
+function DxElement:addChild(child)
     if (not isDxElement(child)) then
         return false
     end
@@ -516,6 +530,32 @@ function DxElement:setChild(child)
 
     return true
 end
+
+function DxElement:removeChild(child)
+    if (not isDxElement(child)) then
+        return false
+    end
+
+    for i, c in ipairs(self.children) do
+        if (child == c) then
+            local remove = table.remove(self.children, i)
+
+            if (self.onChildRemoved) then
+                self:onChildRemoved(child)
+            end
+
+            self:_onChildDisinherited(child)
+
+            self:forceUpdate()
+
+            return remove
+        end
+    end
+
+    return false
+end
+
+-- *******************************************************************
 
 function DxElement:_onChildInherited(child)
     if (self.parent) then
@@ -535,29 +575,6 @@ function DxElement:_onChildDisinherited(child)
 
         return self.parent:_onChildDisinherited(child)
     end
-end
-
-
-function DxElement:removeChild(child)
-    if (not isDxElement(child)) then
-        return false
-    end
-
-    for i, c in ipairs(self.children) do
-        if (child == c) then
-            if (self.onChildRemoved) then
-                self:onChildRemoved(child)
-            end
-
-            self:_onChildDisinherited(child)
-            
-            local remove = table.remove(self.children, i)
-            self:forceUpdate()
-            return remove
-        end
-    end
-
-    return false
 end
 
 -- *******************************************************************
@@ -692,7 +709,7 @@ function DxElement:calculatePosition()
     self.x, self.y = self.parent and (self.baseX + self.parent.x + offsetX) or (self.baseX + offsetX), self.parent and (self.baseY + self.parent.y + offsetY) or (self.baseY + offsetY)
 
     if (self:getProperty("force_in_bounds")) then
-        --if (self.parent:inScrollPane()) then
+        if (self:inScrollPane()) then
             local bounds = self:getBounds()
             local parentBounds = self:getParentBounds()
 
@@ -711,7 +728,7 @@ function DxElement:calculatePosition()
             if (bounds.y.max > parentBounds.y.max) then
                 self.y = parentBounds.y.max - self.height
             end
-        --end
+        end
     end
 end
 
@@ -727,6 +744,19 @@ end
 
 function DxElement:getPositionOffset()
     return self.offsetX, self.offsetY
+end
+
+-- *******************************************************************
+
+function DxElement:getPositionRelativeToScreen()
+    local x, y = self.x, self.y
+    local scrollpane = self:inScrollPane()
+
+    if (scrollpane) then
+        x, y = scrollpane.x + x, scrollpane.y + y
+    end
+
+    return { x = x, y = y }
 end
 
 -- *******************************************************************
@@ -758,10 +788,12 @@ end
 
 function DxElement:getInheritedBounds()
     local bounds = self:getBounds(true)
-
+    local scrollpane = self:inScrollPane()
     for i, child in ipairs(self:getInheritedChildren()) do
-        if (not child:inScrollPane()) then
-            local x, y = child.x - self.x, child.y - self.y
+        --if (not child:inScrollPane()) then
+            
+            local pos = child:getPositionRelativeToScreen()
+            local x, y = pos.x, pos.y
 
             if (x < bounds.x.min) then
                 bounds.x.min = x
@@ -772,13 +804,13 @@ function DxElement:getInheritedBounds()
             end
 
             if ((x + child.width) > bounds.x.max) then
-                bounds.x.max = (x + child.width)
+                bounds.x.max = (x + child.width) - (scrollpane and scrollpane.x or 0)
             end
 
             if ((y + child.height) > bounds.y.max) then
-                bounds.y.max = (y + child.height)
+                bounds.y.max = (y + child.height) - (scrollpane and scrollpane.y or 0)
             end
-        end
+        --end
     end
 
     return bounds

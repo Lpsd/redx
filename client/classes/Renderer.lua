@@ -45,8 +45,9 @@ function Renderer:handleClick(button, state)
 
     for i, element in ipairs(DxRootElements) do
         local inheritedBounds = element:getInheritedBounds()
+        local pos = element:getPositionRelativeToScreen()
 
-        if (isMouseInPosition(element.x + inheritedBounds.x.min, element.y + inheritedBounds.y.min, inheritedBounds.x.max, inheritedBounds.y.max)) then
+        if (isMouseInPosition(pos.x + inheritedBounds.x.min, pos.y + inheritedBounds.y.min, inheritedBounds.x.max, inheritedBounds.y.max)) then
             local obstructingChild = element:getObstructingChild()
 
             if (obstructingChild) then
@@ -65,6 +66,7 @@ function Renderer:handleClick(button, state)
 
                 if (obstructingChild:getClickEnabled()) then
                     local clickArea = obstructingChild:getAbsoluteClickArea()
+                    
                     if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                         if (not isFocusedElement(obstructingChild)) then
                             table.insert(DxFocusedElements, obstructingChild)

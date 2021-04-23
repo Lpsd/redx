@@ -56,7 +56,7 @@ end
 -- *******************************************************************
 
 function DxScrollPane:processUpdate()
-    for i, child in ipairs(self.children) do
+    for i, child in ipairs(self:getInheritedChildren()) do
         if (child.dragging) then
             return self:updateRenderTarget()
         end

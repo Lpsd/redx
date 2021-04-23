@@ -45,7 +45,7 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 -- *******************************************************************
 
 function dxTest()
-    window = DxWindow:new(200, 200, 200, 200)
+    window = DxWindow:new(600, 300, 200, 200)
 
     window:setDraggable(true)
     window:setDraggableChildren(true)
@@ -54,10 +54,11 @@ function dxTest()
     item:setDraggableChildren(true)
 
     item2 = DxRect:new(25, 25, 50, 50, false, item)
+    item2:setDraggableChildren(true)
     item2:setColor(66, 66, 66)
 
-    item3 = DxRect:new(75, 75, 50, 50, false, window)
-    item2:setColor(99, 99, 99)
+    item3 = DxRect:new(25, 25, 50, 50, false, item2)
+    item3:setColor(99, 99, 99)
 end
 -- *******************************************************************
 

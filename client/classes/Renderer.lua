@@ -6,8 +6,6 @@ Renderer = inherit(Singleton)
 -- *******************************************************************
 
 function Renderer:constructor()
-    dxDebug("Renderer initialized")
-
     self.fRender = bind(self.render, self)
     self.fPreRender = bind(self.preRender, self)
 
@@ -54,6 +52,7 @@ function Renderer:handleClick(button, state)
                 if (obstructingChild:getProperty("click_propagate")) then
                     if (element:getClickEnabled()) then
                         local clickArea = element:getAbsoluteClickArea()
+                        
                         if (isMouseInPosition(clickArea.x, clickArea.y, clickArea.width, clickArea.height)) then
                             if (not isFocusedElement(element)) then
                                 table.insert(DxFocusedElements, element)

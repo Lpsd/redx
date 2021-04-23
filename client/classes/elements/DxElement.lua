@@ -206,12 +206,12 @@ function DxElement:clickLeft(state, propagated)
 end
 
 function DxElement:clickRight(state, propagated)
-    dxDebug("Right click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)))
+    dxDebug("Right click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)), self:getType())
     return true
 end
 
 function DxElement:clickMiddle(state, propagated)
-    dxDebug("Middle click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)))
+    dxDebug("Middle click", string.format("(name: %s, state: %s)", self:getName(), tostring(state)), self:getType())
     return true
 end
 
@@ -342,7 +342,7 @@ function DxElement:addEventHandler(eventName, attachedTo, handlerFunction, propa
     local event = addEventHandler(eventName, attachedTo, handlerFunction, propagate, priority)
 
     if (not event) or (type(handlerFunction) ~= "function") then
-        dxDebug("Event failed to add", eventName, handlerFunction)
+        dxDebug("[DxElement:addEventHandler] Event failed to add", eventName, handlerFunction)
         return false
     end
 
@@ -378,7 +378,7 @@ function DxElement:addRenderFunction(func, preRender, protected, ...)
     local renderType = preRender and "preRender" or "render"
 
     if (self.renderFunctions[renderType][func]) then
-        dxDebug("Render function already exists", string.format("(priority: %s)", renderType), func)
+        dxDebug("[DxElement:addRenderFunction] Render function already exists", string.format("(priority: %s)", renderType), func)
         return false
     end
 
@@ -387,7 +387,6 @@ function DxElement:addRenderFunction(func, preRender, protected, ...)
         args = {...}
     }
 
-    dxDebug("Added render function", renderType, func)
     return true
 end
 
@@ -401,7 +400,7 @@ function DxElement:removeRenderFunction(func, preRender)
     local renderType = preRender and "preRender" or "render"
 
     if (not self.renderFunctions[renderType][func]) then
-        dxDebug("Render function doesn't exist", string.format("(priority: %s)", renderType), func)
+        dxDebug("[DxElement:removeRenderFunction] Render function doesn't exist", string.format("(priority: %s)", renderType), func)
         return false
     end
 
@@ -450,7 +449,7 @@ function DxElement:getObstructingChild()
     for i, child in ipairs(self.children) do
         local bounds = child:getInheritedBounds()
         local pos = child:getPositionRelativeToScreen()
-        
+
         if (isMouseInPosition(pos.x + bounds.x.min, pos.y + bounds.y.min, bounds.x.max, bounds.y.max)) then
             local obstructingChild = child:getObstructingChild()
 
@@ -463,6 +462,44 @@ function DxElement:getObstructingChild()
     end
 
     return false
+end
+
+-- *******************************************************************
+
+
+function DxElement:getBounds(relative)
+    return {
+        x = { min = (not relative) and self.x or 0, max = (not relative) and (self.x + self.width) or self.width },
+        y = { min = (not relative) and self.y or 0, max = (not relative) and (self.y + self.height) or self.height }
+    }
+end
+
+function DxElement:getInheritedBounds()
+    local bounds = self:getBounds(true)
+    local scrollpane = self:inScrollPane()
+    local pos = self:getPositionRelativeToScreen()
+    for i, child in ipairs(self:getInheritedChildren()) do
+        local p = child:getPositionRelativeToScreen()
+        local x, y = p.x, p.y
+
+        if ((x - pos.x) < bounds.x.min) then
+            bounds.x.min = (x - pos.x) 
+        end
+
+        if ((y - pos.y)  < bounds.y.min) then
+            bounds.y.min = (y - pos.y) 
+        end
+
+        if ((x + child.width) > bounds.x.max) then
+            bounds.x.max = (x + child.width)
+        end
+
+        if ((y + child.height) > bounds.y.max) then
+            bounds.y.max = (y + child.height)
+        end
+    end
+
+    return bounds
 end
 
 -- *******************************************************************
@@ -709,25 +746,23 @@ function DxElement:calculatePosition()
     self.x, self.y = self.parent and (self.baseX + self.parent.x + offsetX) or (self.baseX + offsetX), self.parent and (self.baseY + self.parent.y + offsetY) or (self.baseY + offsetY)
 
     if (self:getProperty("force_in_bounds")) then
-        if (self:inScrollPane()) then
-            local bounds = self:getBounds()
-            local parentBounds = self:getParentBounds()
+        local bounds = self:getBounds()
+        local parentBounds = self:getParentBounds()
 
-            if (bounds.x.min < parentBounds.x.min) then
-                self.x = parentBounds.x.min
-            end
+        if (bounds.x.min < parentBounds.x.min) then
+            self.x = parentBounds.x.min
+        end
 
-            if (bounds.x.max > parentBounds.x.max) then
-                self.x = parentBounds.x.max - self.width
-            end
+        if (bounds.x.max > parentBounds.x.max) then
+            self.x = parentBounds.x.max - self.width
+        end
 
-            if (bounds.y.min < parentBounds.y.min) then
-                self.y = parentBounds.y.min
-            end
+        if (bounds.y.min < parentBounds.y.min) then
+            self.y = parentBounds.y.min
+        end
 
-            if (bounds.y.max > parentBounds.y.max) then
-                self.y = parentBounds.y.max - self.height
-            end
+        if (bounds.y.max > parentBounds.y.max) then
+            self.y = parentBounds.y.max - self.height
         end
     end
 end
@@ -749,11 +784,12 @@ end
 -- *******************************************************************
 
 function DxElement:getPositionRelativeToScreen()
-    local x, y = self.x, self.y
-    local scrollpane = self:inScrollPane()
+    local parents = self:getInheritedParents()
 
-    if (scrollpane) then
-        x, y = scrollpane.x + x, scrollpane.y + y
+    local x, y = self.baseX, self.baseY
+
+    for i, parent in ipairs(parents) do
+        x, y = parent.baseX + x, parent.baseY + y
     end
 
     return { x = x, y = y }
@@ -779,40 +815,6 @@ function DxElement:getParentBounds(relative)
     }
 end
 
-function DxElement:getBounds(relative)
-    return {
-        x = { min = (not relative) and self.x or 0, max = (not relative) and (self.x + self.width) or self.width },
-        y = { min = (not relative) and self.y or 0, max = (not relative) and (self.y + self.height) or self.height }
-    }
-end
-
-function DxElement:getInheritedBounds()
-    local bounds = self:getBounds(true)
-    local scrollpane = self:inScrollPane()
-    for i, child in ipairs(self:getInheritedChildren()) do
-        local pos = child:getPositionRelativeToScreen()
-        local x, y = child.x, child.y
-
-        if (x < bounds.x.min) then
-            bounds.x.min = x
-        end
-
-        if (y < bounds.y.min) then
-            bounds.y.min = y
-        end
-
-        if ((x + child.width) > bounds.x.max) then
-            bounds.x.max = (x + child.width) + (scrollpane and scrollpane.x or 0)
-        end
-
-        if ((y + child.height) > bounds.y.max) then
-            bounds.y.max = (y + child.height) + (scrollpane and scrollpane.y or 0)
-        end
-    end
-
-    return bounds
-end
-
 -- *******************************************************************
 
 function DxElement:getInheritedChildren()
@@ -827,6 +829,17 @@ function DxElement:getInheritedChildren()
 	end
 
 	return children
+end
+
+function DxElement:getInheritedParents(parents)
+    parents = parents or {}
+
+    if (self.parent) then
+        table.insert(parents, self.parent)
+        return self.parent:getInheritedParents(parents)
+    end
+
+    return parents
 end
 
 function DxElement:isInheritedChild(element)
@@ -865,6 +878,10 @@ function DxElement:getChildrenByType(elementType)
 	
 	return children
 end
+
+-- *******************************************************************
+
+
 
 -- *******************************************************************
 

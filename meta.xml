@@ -4,7 +4,11 @@
     <min_mta_version server="1.5.2-9.07903" client="1.5.2-9.07903" />
 
     <!-- Files -->
+    <file src="meta.xml" />
     <file src="default.properties" />
+
+    <!-- Styles -->
+    <file src="styles/default.xml" styleName="Default" default="true" />
     
     <!-- Shared -->
     <script src="shared/classlib.lua" type="shared" />
@@ -17,13 +21,16 @@
     <script src="client/init.lua" type="client" />
     <script src="client/properties.lua" type="client" />
     <script src="client/utils.lua" type="client" />
+    <script src="client/helpers.lua" type="client" />
         <!-- Classes -->
         <script src="client/classes/Core.lua" type="client" />
         <script src="client/classes/Renderer.lua" type="client" />
         <script src="client/classes/Event.lua" type="client" />
+        <script src="client/classes/Style.lua" type="client" />
 
             <!-- Managers -->
             <script src="client/classes/managers/EventManager.lua" type="client" />
+            <script src="client/classes/managers/StyleManager.lua" type="client" />
 
             <!-- Elements -->
             <script src="client/classes/elements/DxElement.lua" type="client" />

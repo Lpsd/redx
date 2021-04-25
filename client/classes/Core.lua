@@ -8,6 +8,28 @@ Core = inherit(Singleton)
 function Core:constructor()
     self.renderer = Renderer:getInstance()
     self.eventManager = EventManager:getInstance()
+    self.styleManager = StyleManager:getInstance()
+    
+    self.dxTypes = {
+        "RECT",
+        "SCROLLPANE",
+        "SCROLLBAR",
+        "WINDOW"
+    }
+
+    self.dxTypesClass = {
+        ["RECT"] = "DxRect",
+        ["SCROLLPANE"] = "DxScrollPane",
+        ["SCROLLBAR"] = "DxScrollBar",
+        ["WINDOW"] = "DxWindow"
+    }
+
+    self.dxRootElements = {}
+    self.dxFocusedElements = {}
+
+    self.debugMode = true
+
+    enum(self.dxTypes, "DX")
 
     self.eventManager:addEvent("onDxPropertyChange", true)
 end

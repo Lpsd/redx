@@ -49,18 +49,10 @@ function enew(element, class, ...)
 	end
 		
 	callDerivedConstructor(superMultiple(class), element, ...)
-
-    local args = {...}
-
-    for i = #args, 1, -1 do
-        if (i >= 1) and (i <= DEFAULT_ARGS) then
-            table.remove(args, i)
-        end
-    end
 	
 	-- Call constructor
 	if rawget(class, "constructor") then
-		rawget(class, "constructor")(element, unpack(args))
+		rawget(class, "constructor")(element, ...)
 	end
 	element.constructor = false
 	
@@ -116,9 +108,11 @@ function new(class, ...)
     
     local args = {...}
 
-    for i = #args, 1, -1 do
-        if (i >= 1) and (i <= DEFAULT_ARGS) then
-            table.remove(args, i)
+    if (class.__dx) then
+        for i = #args, 1, -1 do
+            if (i >= 1) and (i <= DEFAULT_ARGS) then
+                table.remove(args, i)
+            end
         end
     end
 	
@@ -127,8 +121,8 @@ function new(class, ...)
 		rawget(class, "constructor")(instance, unpack(args))
 	end
 	instance.constructor = false
-
-    if (instance.__parent) then
+    
+    if (instance.__dx) and (instance.__parent) then
         instance:setParent(instance.__parent)
         instance.__parent = nil
     end

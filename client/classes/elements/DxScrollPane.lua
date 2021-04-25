@@ -18,8 +18,6 @@ function DxScrollPane:constructor()
 
     self.scrollbar = false
 
-    self.color.default.a = 0
-
     self.childPropertyListeners = {
         "update",
         "baseX",
@@ -70,7 +68,9 @@ function DxScrollPane:drawRenderTarget()
         return false
     end
 
-    dxDrawRectangle(self.x, self.y, self.width, self.height, tocolor(self.color.realtime.r, self.color.realtime.g, self.color.realtime.b, self.color.realtime.a))
+    local color = self.style:getColor("background")
+
+    dxDrawRectangle(self.x, self.y, self.width, self.height, tocolor(color.r, color.g, color.b, color.a))
     dxDrawImage(self.x, self.y, self.width, self.height, self.renderTarget)
 end
 

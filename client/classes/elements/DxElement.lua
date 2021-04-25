@@ -3,6 +3,7 @@
 
 -- *******************************************************************
 DxElement = inherit(Class)
+DxElement.__dx = true
 -- *******************************************************************
 
 function DxElement:virtual_constructor(x, y, width, height, relative, parent)
@@ -49,35 +50,11 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
         changed = false
     }
 
-    self.color = {
-        default = {
-            r = 255,
-            g = 255,
-            b = 255,
-            a = 255
-        },
-        realtime = {
-            r = 0, 
-            g = 0, 
-            b = 0, 
-            a = 0
-        }
-    }
 
-    self.textColor = {
-        default = {
-            r = 255,
-            g = 255,
-            b = 255,
-            a = 255
-        },
-        realtime = {
-            r = 255, 
-            g = 255, 
-            b = 255, 
-            a = 255
-        }
-    }    
+    local styleManager = StyleManager:getInstance()
+
+    self.style = styleManager:createStyleInstance(styleManager:getCurrentStyle(), self)
+    self.style.dxInstance = self  
 
     self.parent = false
     self.children = {}
@@ -411,7 +388,6 @@ end
 -- *******************************************************************
 
 function DxElement:render(static)
-    self:calculateColor()
     self:calculateSize()
     self:calculatePosition()
 
@@ -448,7 +424,7 @@ end
 function DxElement:getObstructingChild()
     for i, child in ipairs(self.children) do
         local bounds = child:getInheritedBounds()
-        local pos = child:getPositionRelativeToScreen()
+        local pos = child:getAbsolutePosition()
 
         if (isMouseInPosition(pos.x + bounds.x.min, pos.y + bounds.y.min, bounds.x.max, bounds.y.max)) then
             local obstructingChild = child:getObstructingChild()
@@ -477,9 +453,9 @@ end
 function DxElement:getInheritedBounds()
     local bounds = self:getBounds(true)
     local scrollpane = self:inScrollPane()
-    local pos = self:getPositionRelativeToScreen()
+    local pos = self:getAbsolutePosition()
     for i, child in ipairs(self:getInheritedChildren()) do
-        local p = child:getPositionRelativeToScreen()
+        local p = child:getAbsolutePosition()
         local x, y = p.x, p.y
 
         if ((x - pos.x) < bounds.x.min) then
@@ -529,12 +505,14 @@ function DxElement:setParent(parent)
         return false
     end
 
+    local core = Core:getInstance()
+
     if (parent) and (not self.parent) then
-        table.remove(DxRootElements, self.index)
+        table.remove(core.dxRootElements, self.index)
     end
 
     if (not parent) then
-        table.insert(DxRootElements, 1, self)
+        table.insert(core.dxRootElements, 1, self)
     end
 
     if (self.parent) then
@@ -628,7 +606,7 @@ function DxElement:setIndex(index)
     end
 
     local isRoot = self:isRoot()
-    local rootTable = isRoot and DxRootElements or self.parent.children
+    local rootTable = isRoot and Core:getInstance().dxRootElements or self.parent.children
     local currentTableIndex = self:getTableIndex()
 
     if (currentTableIndex) then
@@ -637,14 +615,14 @@ function DxElement:setIndex(index)
 
     table.insert(rootTable, index, self)
 
-    refreshElementIndexes()
+    Renderer:getInstance():refreshElementIndexes()
     return true
 end
 
 -- *******************************************************************
 
 function DxElement:getTableIndex()
-    local rootTable = self:isRoot() and DxRootElements or self.parent.children
+    local rootTable = self:isRoot() and Core:getInstance().dxRootElements or self.parent.children
     for i, element in ipairs(rootTable) do
         if (element == self) then
             return i
@@ -697,22 +675,6 @@ end
 
 -- *******************************************************************
 
-function DxElement:setColor(r, g, b, a)
-    r, g, b, a = tonumber(r), tonumber(g), tonumber(b), tonumber(a)
-
-    self.color.default.r = r and r or self.color.default.r
-    self.color.default.g = g and g or self.color.default.g
-    self.color.default.b = b and b or self.color.default.b
-    self.color.default.a = a and a or self.color.default.a
-
-    self:calculateColor()
-    self:forceUpdate()
-
-    return true
-end
-
--- *******************************************************************
-
 function DxElement:bringToFront()
     return self:setIndex(1)
 end
@@ -723,11 +685,6 @@ function DxElement:sendToBack()
 end
 
 -- *******************************************************************
-
-function DxElement:calculateColor()
-    -- Extra logic required later for color interpolation
-    self.color.realtime = self.color.default 
-end
 
 function DxElement:calculatePosition()
     local offsetX, offsetY = 0, 0
@@ -783,7 +740,7 @@ end
 
 -- *******************************************************************
 
-function DxElement:getPositionRelativeToScreen()
+function DxElement:getAbsolutePosition()
     local parents = self:getInheritedParents()
 
     local x, y = self.baseX, self.baseY
@@ -802,10 +759,12 @@ function DxElement:getParent()
 end
 
 function DxElement:getParentBounds(relative)
+    local renderer = Renderer:getInstance()
+
     if (not self.parent) then
         return {
-            x = { min = 0, max = SCREEN_WIDTH },
-            y = { min = 0, max = SCREEN_HEIGHT }
+            x = { min = 0, max = renderer.screenWidth },
+            y = { min = 0, max = renderer.screenHeight }
         }
     end
 
@@ -881,12 +840,9 @@ end
 
 -- *******************************************************************
 
-
-
--- *******************************************************************
-
 function DxElement:getType()
-    return DX_TYPES[self.type] and "DX_" .. DX_TYPES[self.type] or false
+    local core = Core:getInstance()
+    return core.dxTypes[self.type] and "DX_" .. core.dxTypes[self.type] or false
 end
 
 function DxElement:getEnumerableType()
@@ -930,7 +886,9 @@ function DxElement:relativeToAbsolutePosition(relativeX, relativeY)
         return self.parent.x + (self.parent.width * relativeX), self.parent.y + (self.parent.height * relativeY)
     end
 
-    return (SCREEN_WIDTH * relativeX), (SCREEN_HEIGHT * relativeY)
+    local renderer = Renderer:getInstance()
+
+    return (renderer.screenWidth * relativeX), (renderer.screenHeight * relativeY)
 end
 
 function DxElement:absoluteToRelativePosition(absoluteX, absoluteY)
@@ -949,9 +907,11 @@ function DxElement:absoluteToRelativePosition(absoluteX, absoluteY)
         return (offsetX / self.parent.width), (offsetY / self.parent.height)
     end
 
-    offsetX, offsetY = math.clamp(absoluteX, 0, SCREEN_WIDTH), math.clamp(absoluteY, 0, SCREEN_HEIGHT)
+    local renderer = Renderer:getInstance()
 
-    return (offsetX / SCREEN_WIDTH), (offsetY / SCREEN_HEIGHT)
+    offsetX, offsetY = math.clamp(absoluteX, 0, renderer.screenWidth), math.clamp(absoluteY, 0, renderer.screenHeight)
+
+    return (offsetX / renderer.screenWidth), (offsetY / renderer.screenHeight)
 end
 
 -- *******************************************************************
@@ -960,7 +920,8 @@ function DxElement:relativeToAbsoluteSize(relativeWidth, relativeHeight)
     if (not tonumber(relativeWidth)) or (not tonumber(relativeHeight)) then
         return false
     end
-    local rootWidth, rootHeight = self.parent and self.parent.width or SCREEN_WIDTH, self.parent and self.parent.height or SCREEN_HEIGHT
+    local renderer = Renderer:getInstance()
+    local rootWidth, rootHeight = self.parent and self.parent.width or renderer.screenWidth, self.parent and self.parent.height or renderer.screenHeight
     return (relativeWidth / rootWidth), (relativeHeight / rootHeight)
 end
 
@@ -968,7 +929,8 @@ function DxElement:absoluteToRelativeSize(absoluteWidth, absoluteHeight)
     if (not tonumber(absoluteWidth)) or (not tonumber(absoluteHeight)) then
         return false
     end
-    local rootWidth, rootHeight = self.parent and self.parent.width or SCREEN_WIDTH, self.parent and self.parent.height or SCREEN_HEIGHT
+    local renderer = Renderer:getInstance()
+    local rootWidth, rootHeight = self.parent and self.parent.width or renderer.screenWidth, self.parent and self.parent.height or renderer.screenHeight
     absoluteWidth, absoluteHeight = math.clamp(absoluteWidth, 0, rootWidth), math.clamp(absoluteHeight, 0, rootHeight)
     return (absoluteWidth - rootWidth) / rootWidth, (absoluteHeight - rootHeight) / rootHeight
 end

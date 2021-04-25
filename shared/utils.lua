@@ -18,7 +18,7 @@ function math.clamp(num, min, max)
 end
 
 function dxDebug(...)
-    if (DEBUG) then
+    if (true) then
         return iprint("[DX Library]", ...)
     end
     return false

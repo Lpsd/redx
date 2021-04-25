@@ -19,7 +19,9 @@ function getAbsoluteCursorPosition()
         return false
     end
 
-	return (cursorX * SCREEN_WIDTH), (cursorY * SCREEN_HEIGHT)
+    local renderer = Renderer:getInstance()
+
+	return (cursorX * renderer.screenWidth), (cursorY * renderer.screenHeight)
 end
 
 function isDxElement(e)

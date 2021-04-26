@@ -50,7 +50,7 @@ function DxScrollPane:processScrollbars()
 
         scrollbarX:setThumbSize(scrollbarX.trackbar.width * overflow)
 
-        self.drawOffset.x = -scrollbarX:getThumbPosition()
+        self.drawOffset.x = -scrollbarX:getThumbPosition() * (bounds.x.max / self.width)
     end
 
     if (scrollbarY) then
@@ -58,7 +58,7 @@ function DxScrollPane:processScrollbars()
 
         scrollbarY:setThumbSize(scrollbarY.trackbar.height * overflow)
 
-        self.drawOffset.y = -scrollbarY:getThumbPosition()
+        self.drawOffset.y = -scrollbarY:getThumbPosition() * (bounds.y.max / self.height)
     end
 end
 

@@ -424,16 +424,23 @@ function DxElement:isObstructed()
 end
 
 function DxElement:getObstructingChild()
+    local bounds = self:getInheritedBounds()
     for i, child in ipairs(self.children) do
-        local bounds = child:getInheritedBounds()
+        local childBounds = child:getInheritedBounds()
         local pos = child:getAbsolutePosition()
 
-        if (isMouseInPosition(pos.x + bounds.x.min, pos.y + bounds.y.min, bounds.x.max, bounds.y.max)) then
+        local scrollpane = child:inScrollPane()
+        local scrollpaneOffset = {
+            x = (scrollpane and scrollpane.drawOffset.x or 0),
+            y = (scrollpane and scrollpane.drawOffset.y or 0)
+        }
+
+        if (isMouseInPosition(pos.x + childBounds.x.min + scrollpaneOffset.x, pos.y + childBounds.y.min + scrollpaneOffset.y, childBounds.x.max + math.abs(childBounds.x.min), childBounds.y.max + math.abs(childBounds.y.min))) then
             local obstructingChild = child:getObstructingChild()
 
             if (obstructingChild) then
                 return obstructingChild
-            elseif (isMouseInPosition(pos.x, pos.y, child.width, child.height)) then
+            elseif (isMouseInPosition(pos.x + scrollpaneOffset.x, pos.y + scrollpaneOffset.y, child.width, child.height)) then
                 return child
             end
         end
@@ -467,11 +474,11 @@ function DxElement:getInheritedBounds()
             bounds.y.min = (childPos.y - pos.y) 
         end
 
-        if ((childPos.x + child.width) > pos.x + bounds.x.max) then
+        if ((childPos.x + child.width) - pos.x > bounds.x.max) then
             bounds.x.max = (childPos.x + child.width) - pos.x
         end
 
-        if ((childPos.y + child.height) > pos.y + bounds.y.max) then
+        if ((childPos.y + child.height) - pos.y > bounds.y.max) then
             bounds.y.max = (childPos.y + child.height) - pos.y
         end
     end

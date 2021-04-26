@@ -306,6 +306,8 @@ function DxElement:setSize(width, height, relative)
     self.clickArea.width = self.clickArea.changed and self.clickArea.width or self.baseWidth
     self.clickArea.height = self.clickArea.changed and self.clickArea.height or self.baseHeight    
 
+    self:forceUpdate()
+
     return true
 end
 
@@ -455,23 +457,22 @@ function DxElement:getInheritedBounds()
     local scrollpane = self:inScrollPane()
     local pos = self:getAbsolutePosition()
     for i, child in ipairs(self:getInheritedChildren()) do
-        local p = child:getAbsolutePosition()
-        local x, y = p.x, p.y
+        local childPos = child:getAbsolutePosition()
 
-        if ((x - pos.x) < bounds.x.min) then
-            bounds.x.min = (x - pos.x) 
+        if ((childPos.x - pos.x) < bounds.x.min) then
+            bounds.x.min = (childPos.x - pos.x) 
         end
 
-        if ((y - pos.y)  < bounds.y.min) then
-            bounds.y.min = (y - pos.y) 
+        if ((childPos.y - pos.y)  < bounds.y.min) then
+            bounds.y.min = (childPos.y - pos.y) 
         end
 
-        if ((x + child.width) > bounds.x.max) then
-            bounds.x.max = (x + child.width)
+        if ((childPos.x + child.width) > pos.x + bounds.x.max) then
+            bounds.x.max = (childPos.x + child.width) - pos.x
         end
 
-        if ((y + child.height) > bounds.y.max) then
-            bounds.y.max = (y + child.height)
+        if ((childPos.y + child.height) > pos.y + bounds.y.max) then
+            bounds.y.max = (childPos.y + child.height) - pos.y
         end
     end
 

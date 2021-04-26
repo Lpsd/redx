@@ -13,4 +13,10 @@
     <class name="DxScrollPane">
         <color type="background" r=255 g=255 b=255 a=0 />
     </class>
+
+    <class name="DxScrollBar">
+        <color type="thumb" r=44 g=44 b=44 a=255 />
+        <color type="trackbar" r=66 g=66 b=66 a=255 />
+        <color type="button" r=55 g=55 b=55 a=255 />
+    </class>
 </style>

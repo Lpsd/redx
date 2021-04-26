@@ -24,9 +24,8 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 -- *******************************************************************
 
 function dxTest()
-    window = DxWindow:new(500, 300, 400, 400, false, nil, "Test Window")
+    window = DxWindow:new(500, 300, 400, 400, false, nil, "Test Window", 35, true, true)
     window:setDraggable(true)
-    window:setDraggableChildren(true)
 
     item = DxRect:new(25, 25, 100, 100, false, window)
     item:setDraggableChildren(true)

@@ -14,25 +14,51 @@ function DxScrollBar:constructor()
     self.negativeButton = DxRect:new(0, 0, self.buttonSize, self.buttonSize, false, self)
     self.positiveButton = DxRect:new(self:isVertical() and 0 or self.width - self.buttonSize, self:isVertical() and self.height - self.buttonSize or 0, self.buttonSize, self.buttonSize, false, self)
 
-    self.negativeButton:setColor(66, 66, 66)
-    self.positiveButton:setColor(66, 66, 66)  
+    local buttonColor = self.style:getColor("button")
+
+    self.negativeButton.style:setColor("background", buttonColor.r, buttonColor.g, buttonColor.b)
+    self.positiveButton.style:setColor("background", buttonColor.r, buttonColor.g, buttonColor.b) 
 
     self.trackbar = DxRect:new(self.x + (not self:isVertical() and self.buttonSize or 0), self.y + (self:isVertical() and self.buttonSize or 0), self.width - (not self:isVertical() and (self.buttonSize * 2) or 0), self.height - (self:isVertical() and self.buttonSize * 2 or 0), false, self)
-    self.trackbar:setColor(33, 33, 33)
+    
+    local trackbarColor = self.style:getColor("trackbar")
+    self.trackbar.style:setColor("background", trackbarColor.r, trackbarColor.g, trackbarColor.b)
     self.trackbar:setDraggableChildren(true)
 
-    self.handle = {
-        size = 50, --example handle size for now
-        offset = 0
-    }
-
-    self.handle.element = DxRect:new(0, 0, self:isVertical() and self.width or self.handle.size, self:isVertical() and self.handle.size or self.height, false, self.trackbar)
-    self.handle.element:setColor(11, 11, 11)
-    self.handle.element:setProperty("click_propagate", true)
+    self.thumb = DxRect:new(0, 0, self:isVertical() and self.width or 0, not self:isVertical() and self.height or 0, false, self.trackbar)
+    
+    local thumbColor = self.style:getColor("thumb")
+    self.thumb.style:setColor("background", thumbColor.r, thumbColor.g, thumbColor.b)
+    self.thumb:setProperty("force_in_bounds", true)
 end
 
 -- *******************************************************************
 
 function DxScrollBar:isVertical()
     return self.orientation == "vertical"
+end
+
+-- *******************************************************************
+
+function DxScrollBar:setThumbSize(size)
+    local vert = self:isVertical()
+
+    self.thumb:setSize(not vert and size or nil, vert and size or nil)
+end
+
+function DxScrollBar:getThumbSize()
+    return self.thumb.size
+end
+
+-- *******************************************************************
+
+function DxScrollBar:getThumbPosition()
+    local thumbPos = self.thumb:getAbsolutePosition()
+    local trackbarPos = self.trackbar:getAbsolutePosition()
+    return (self:isVertical()) and (self.thumb.y - self.trackbar.y) or (self.thumb.x - self.trackbar.x)
+end
+
+function DxScrollBar:setThumbPosition(pos)
+    self.thumb[self:isVertical() and "baseY" or "baseX"] = pos
+    return true
 end

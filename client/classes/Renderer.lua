@@ -78,7 +78,7 @@ function Renderer:handleClick(button, state)
                                 table.insert(core.dxFocusedElements, element)
                             end
 
-                            element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false, true)
+                            return element["click"..button:gsub("^%l", string.upper)](element, true)
                         end
                     end
                 end
@@ -91,7 +91,7 @@ function Renderer:handleClick(button, state)
                             table.insert(core.dxFocusedElements, obstructingChild)
                         end
                         
-                        return obstructingChild["click"..button:gsub("^%l", string.upper)](obstructingChild, (state == "down") and true or false)
+                        return obstructingChild["click"..button:gsub("^%l", string.upper)](obstructingChild, true)
                     end
                 end
             end
@@ -100,7 +100,7 @@ function Renderer:handleClick(button, state)
                 table.insert(core.dxFocusedElements, element)
             end           
 
-            element["click"..button:gsub("^%l", string.upper)](element, (state == "down") and true or false)
+            element["click"..button:gsub("^%l", string.upper)](element, true)
             return   
         end
     end

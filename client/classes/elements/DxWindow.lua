@@ -5,16 +5,40 @@
 DxWindow = inherit(DxElement)
 -- *******************************************************************
 
-function DxWindow:constructor(titleText, titleHeight)
+function DxWindow:constructor(titleText, titleHeight, scrollbarX, scrollbarY, scrollbarSize)
     self.type = DX_WINDOW
 
     self.titlebar = {
         text = titleText or "Window",
         height = titleHeight or 20
     }
+
+    self.scrollbar = {
+        size = tonumber(scrollbarSize) or 20
+    }
     
-    self.scrollpane = DxScrollPane:new(0, self.titlebar.height, self.width, self.height - self.titlebar.height, false, self)
+    if (scrollbarX) then
+        self.scrollbar.x = {
+            element = DxScrollBar:new(0, self.height - self.scrollbar.size, self.width, self.scrollbar.size, false, self)
+        }
+    end
+
+    if (scrollbarY) then
+        self.scrollbar.y = {
+            element = DxScrollBar:new(self.width - self.scrollbar.size, 0 + self.titlebar.height, self.scrollbar.size, self.height - self.titlebar.height, false, self)
+        }
+    end    
+    
+    self.scrollpane = DxScrollPane:new(0, self.titlebar.height, self.width - (self.scrollbar.y and self.scrollbar.size or 0), self.height - self.titlebar.height - (self.scrollbar.x and self.scrollbar.size or 0), false, self)
     self.scrollpane:setProperty("force_in_bounds", true)
+
+    if (scrollbarX) then
+        self.scrollpane:setScrollBar(self.scrollbar.x.element)
+    end
+
+    if (scrollbarY) then
+        self.scrollpane:setScrollBar(self.scrollbar.y.element)
+    end
 
     self:addRenderFunction(self.draw)
 end
@@ -29,7 +53,7 @@ function DxWindow:draw()
 
     dxDrawRectangle(self.x, self.y, self.width, self.titlebar.height, tocolor(titlebarColor.r, titlebarColor.g, titlebarColor.b, titlebarColor.a))
     dxDrawText(self.titlebar.text, self.x, self.y, self.x + self.width, self.y + self.titlebar.height, tocolor(titlebarTextColor.r, titlebarTextColor.g, titlebarTextColor.b, titlebarTextColor.a), 1, "default", "center", "center")
-    dxDrawRectangle(self.x, self.y + self.titlebar.height, self.width, self.height - self.titlebar.height, tocolor(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a))
+    dxDrawRectangle(self.x, self.y + self.titlebar.height, self.scrollpane.width, self.scrollpane.height, tocolor(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a))
 end
 
 function DxWindow:onChildAdded(child)

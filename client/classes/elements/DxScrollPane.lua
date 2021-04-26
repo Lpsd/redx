@@ -14,14 +14,20 @@ function DxScrollPane:constructor()
     self.renderWithChildren = false
 
     self:addRenderFunction(self.drawRenderTarget)
-    self:addRenderFunction(self.processUpdate)
+    self:addRenderFunction(self.processUpdate, true)
+    self:addRenderFunction(self.processScrollbars, true)
 
-    self.scrollbar = false
+    self.scrollbars = {}
 
     self.childPropertyListeners = {
         "update",
         "baseX",
         "baseY"
+    }
+
+    self.drawOffset = {
+        x = 0,
+        y = 0
     }
 
     self.fOnPropertyChange = bind(self.onPropertyChange, self)
@@ -34,20 +40,49 @@ end
 
 -- *******************************************************************
 
+function DxScrollPane:processScrollbars()
+    local bounds = self:getInheritedBounds()
+
+    local scrollbarX, scrollbarY = self.scrollbars.x, self.scrollbars.y
+
+    if (scrollbarX) then
+        local overflow = (self.width / bounds.x.max)
+
+        scrollbarX:setThumbSize(scrollbarX.trackbar.width * overflow)
+
+        self.drawOffset.x = -scrollbarX:getThumbPosition()
+    end
+
+    if (scrollbarY) then
+        local overflow = (self.height / bounds.y.max)
+
+        scrollbarY:setThumbSize(scrollbarY.trackbar.height * overflow)
+
+        self.drawOffset.y = -scrollbarY:getThumbPosition()
+    end
+end
+
+-- *******************************************************************
+
 function DxScrollPane:getScrollBar()
     return self.scrollbar
 end
 
 function DxScrollPane:setScrollBar(scrollbar)
-    if (scrollbar ~= false) and (scrollbar ~= nil) and (not isDxElement(scrollbar)) then
+    if (not isDxElement(scrollbar)) then
         return false
     end
 
-    if (isDxElement(self.scrollbar)) then
-        self.scrollbar:destroy()
+    local orientation = scrollbar:isVertical() and "y" or "x"
+
+    if (self.scrollbars[orientation]) then
+        Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):removeHandler(self.scrollbars[orientation].thumb, self.fOnPropertyChange)
+        self.scrollbars[orientation].thumb:removePropertyListener(orientation)
     end
 
-    self.scrollbar = scrollbar
+    self.scrollbars[orientation] = scrollbar
+    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(scrollbar.thumb, self.fOnPropertyChange)
+    scrollbar.thumb:addPropertyListener(orientation)
     return true
 end
 
@@ -56,6 +91,18 @@ end
 function DxScrollPane:processUpdate()
     for i, child in ipairs(self:getInheritedChildren()) do
         if (child.dragging) then
+            return self:updateRenderTarget()
+        end
+    end
+
+    if (self.scrollbars.x) then
+        if (self.scrollbars.x.thumb.dragging) then
+            return self:updateRenderTarget()
+        end
+    end
+
+    if (self.scrollbars.y) then
+        if (self.scrollbars.y.thumb.dragging) then
             return self:updateRenderTarget()
         end
     end
@@ -133,7 +180,7 @@ function DxScrollPane:updateRenderTarget()
 
     for i = #self.children, 1, -1 do
         local child = self.children[i]
-        child:setPositionOffset(-self.x, -self.y)
+        child:setPositionOffset(-self.x + self.drawOffset.x, -self.y + self.drawOffset.y)
         child:render(true)
         child:setPositionOffset(0, 0)
     end

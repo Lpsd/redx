@@ -21,12 +21,16 @@ function DxWindow:constructor(titleText, titleHeight, scrollbarX, scrollbarY, sc
         self.scrollbar.x = {
             element = DxScrollBar:new(0, self.height - self.scrollbar.size, self.width, self.scrollbar.size, false, self)
         }
+
+        self.scrollbar.x.element.__internal = true
     end
 
     if (scrollbarY) then
         self.scrollbar.y = {
             element = DxScrollBar:new(self.width - self.scrollbar.size, 0 + self.titlebar.height, self.scrollbar.size, self.height - self.titlebar.height, false, self)
         }
+
+        self.scrollbar.y.element.__internal = true
     end    
     
     self.scrollpane = DxScrollPane:new(0, self.titlebar.height, self.width - (self.scrollbar.y and self.scrollbar.size or 0), self.height - self.titlebar.height - (self.scrollbar.x and self.scrollbar.size or 0), false, self)
@@ -41,6 +45,11 @@ function DxWindow:constructor(titleText, titleHeight, scrollbarX, scrollbarY, sc
     end
 
     self:addRenderFunction(self.draw)
+
+    -- If we create another dx-element as a child of this one, set it as internal
+    -- Note: scrollbars have already been set as internal above (if created)
+    self.scrollpane.__internal = true
+    -- ...
 end
 
 -- *******************************************************************

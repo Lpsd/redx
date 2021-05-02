@@ -30,6 +30,13 @@ function DxScrollBar:constructor()
     local thumbColor = self.style:getColor("thumb")
     self.thumb.style:setColor("background", thumbColor.r, thumbColor.g, thumbColor.b)
     self.thumb:setProperty("force_in_bounds", true)
+
+    -- If we create another dx-element as a child of this one, set it as internal
+    self.negativeButton.__internal = true
+    self.positiveButton.__internal = true
+    self.trackbar.__internal = true
+    self.thumb.__internal = true
+    -- ...
 end
 
 -- *******************************************************************

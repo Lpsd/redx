@@ -17,6 +17,8 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self.propertyListeners = {}
 
+    self.__internal = false
+
     self.id = string.random(6) .. getTickCount()
     self.name = "dx-" .. self.id
     self.__dx = true
@@ -49,7 +51,6 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
         height = height,
         changed = false
     }
-
 
     local styleManager = StyleManager:getInstance()
 
@@ -86,8 +87,10 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     return self
 end
 
-function DxElement:destructor()
-
+function DxElement:virtual_destructor()
+    for i, event in ipairs(self.events) do
+        removeEventHandler(event.eventName, event.attachedTo, event.handlerFunction)
+    end
 end
 
 -- *******************************************************************
@@ -395,7 +398,7 @@ end
 
 -- *******************************************************************
 
-function DxElement:render(static)
+function DxElement:render()
     self:calculateSize()
     self:calculatePosition()
 
@@ -688,10 +691,6 @@ function DxElement:setProperty(name, val)
         return false
     end
 
-    if (self.properties[name]) and (type(val) ~= type(self.properties[name])) then
-        return false
-    end
-
     self.properties[name] = val
     return true
 end
@@ -719,7 +718,6 @@ function DxElement:calculatePosition()
 
     if (self.dragging) then
         if (cursorX) and (cursorY) then
-            local scrollpane = self:inScrollPane()
             offsetX, offsetY = cursorX - self.clickInitialX, cursorY - self.clickInitialY
         end
     end
@@ -852,7 +850,15 @@ end
 -- *******************************************************************
 
 function DxElement:getChildren()
-	return self.children
+    local children = {}
+
+    for i, child in ipairs(self.children) do
+        if (not child.__internal) then
+            table.insert(children, child)
+        end
+    end
+
+	return children
 end
 
 function DxElement:getChildrenByType(elementType)

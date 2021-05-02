@@ -472,27 +472,33 @@ function DxElement:getBounds(relative)
     }
 end
 
-function DxElement:getInheritedBounds()
+function DxElement:getInheritedBounds(includeScrollpaneElements)
+    includeScrollpaneElements = (type(includeScrollpaneElements) ~= "boolean") and true or includeScrollpaneElements
+
     local bounds = self:getBounds(true)
     local scrollpane = self:inScrollPane()
     local pos = self:getAbsolutePosition()
     for i, child in ipairs(self:getInheritedChildren()) do
-        local childPos = child:getAbsolutePosition()
+        local childScrollpane = child:inScrollPane()
 
-        if ((childPos.x - pos.x) < bounds.x.min) then
-            bounds.x.min = (childPos.x - pos.x) 
-        end
+        if (childScrollpane and includeScrollpaneElements) or (not childScrollpane) then
+            local childPos = child:getAbsolutePosition()
 
-        if ((childPos.y - pos.y)  < bounds.y.min) then
-            bounds.y.min = (childPos.y - pos.y) 
-        end
+            if ((childPos.x - pos.x) < bounds.x.min) then
+                bounds.x.min = (childPos.x - pos.x) 
+            end
 
-        if ((childPos.x + child.width) - pos.x > bounds.x.max) then
-            bounds.x.max = (childPos.x + child.width) - pos.x
-        end
+            if ((childPos.y - pos.y)  < bounds.y.min) then
+                bounds.y.min = (childPos.y - pos.y) 
+            end
 
-        if ((childPos.y + child.height) - pos.y > bounds.y.max) then
-            bounds.y.max = (childPos.y + child.height) - pos.y
+            if ((childPos.x + child.width) - pos.x > bounds.x.max) then
+                bounds.x.max = (childPos.x + child.width) - pos.x
+            end
+
+            if ((childPos.y + child.height) - pos.y > bounds.y.max) then
+                bounds.y.max = (childPos.y + child.height) - pos.y
+            end
         end
     end
 

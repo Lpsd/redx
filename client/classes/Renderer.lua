@@ -62,7 +62,7 @@ function Renderer:handleClick(button, state)
     end
 
     for i, element in ipairs(core.dxRootElements) do
-        local inheritedBounds = element:getInheritedBounds()
+        local inheritedBounds = element:getInheritedBounds(false)
         local pos = element:getAbsolutePosition()
 
         if (isMouseInPosition(pos.x + inheritedBounds.x.min, pos.y + inheritedBounds.y.min, inheritedBounds.x.max, inheritedBounds.y.max)) then

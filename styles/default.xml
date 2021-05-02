@@ -10,6 +10,11 @@
         <color type="background" r=44 g=44 b=44 a=255 />
     </class>
 
+    <class name="DxLabel">
+        <color type="background" r=255 g=255 b=255 a=0 />
+        <color type="text" r=238 g=238 b=238 a=255 />
+    </class>
+
     <class name="DxScrollPane">
         <color type="background" r=255 g=255 b=255 a=0 />
     </class>

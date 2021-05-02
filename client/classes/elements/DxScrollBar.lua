@@ -62,3 +62,7 @@ function DxScrollBar:setThumbPosition(pos)
     self.thumb[self:isVertical() and "baseY" or "baseX"] = pos
     return true
 end
+
+function DxScrollBar:getMaxThumbPosition()
+    return (self:isVertical()) and (self.thumb.height - self.trackbar.height) or (self.thumb.width - self.trackbar.width)
+end

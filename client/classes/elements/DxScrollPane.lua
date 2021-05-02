@@ -15,9 +15,10 @@ function DxScrollPane:constructor()
 
     self:addRenderFunction(self.drawRenderTarget)
     self:addRenderFunction(self.processUpdate, true)
-    self:addRenderFunction(self.processScrollbars, true)
+    self:addRenderFunction(self.processScrollbars)
 
     self.scrollbars = {}
+    self.childIsDragging = false
 
     self.childPropertyListeners = {
         "update",
@@ -48,17 +49,31 @@ function DxScrollPane:processScrollbars()
     if (scrollbarX) then
         local overflow = (self.width / bounds.x.max)
 
-        scrollbarX:setThumbSize(scrollbarX.trackbar.width * overflow)
+        if (not scrollbarX.thumb.dragging) then
+            scrollbarX:setThumbSize(scrollbarX.trackbar.width * overflow)
+        end
 
+        local offset = self.drawOffset.x
         self.drawOffset.x = -scrollbarX:getThumbPosition() * (bounds.x.max / self.width)
+        
+        if (self.drawOffset.x ~= offset) then
+            self:updateRenderTarget()
+        end
     end
 
     if (scrollbarY) then
         local overflow = (self.height / bounds.y.max)
 
-        scrollbarY:setThumbSize(scrollbarY.trackbar.height * overflow)
+        if (not scrollbarY.thumb.dragging) then
+            scrollbarY:setThumbSize(scrollbarY.trackbar.height * overflow)
+        end
 
+        local offset = self.drawOffset.y
         self.drawOffset.y = -scrollbarY:getThumbPosition() * (bounds.y.max / self.height)
+
+        if (self.drawOffset.y ~= offset) then
+            self:updateRenderTarget()
+        end
     end
 end
 
@@ -91,9 +106,12 @@ end
 function DxScrollPane:processUpdate()
     for i, child in ipairs(self:getInheritedChildren()) do
         if (child.dragging) then
+            self.childIsDragging = true
             return self:updateRenderTarget()
         end
     end
+
+    self.childIsDragging = false
 
     if (self.scrollbars.x) then
         if (self.scrollbars.x.thumb.dragging) then
@@ -181,7 +199,7 @@ function DxScrollPane:updateRenderTarget()
     for i = #self.children, 1, -1 do
         local child = self.children[i]
         child:setPositionOffset(-self.x + self.drawOffset.x, -self.y + self.drawOffset.y)
-        child:render(true)
+        child:render()
         child:setPositionOffset(0, 0)
     end
 

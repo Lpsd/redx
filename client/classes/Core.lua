@@ -14,14 +14,16 @@ function Core:constructor()
         "RECT",
         "SCROLLPANE",
         "SCROLLBAR",
-        "WINDOW"
+        "WINDOW",
+        "LABEL"
     }
 
     self.dxTypesClass = {
         ["RECT"] = "DxRect",
         ["SCROLLPANE"] = "DxScrollPane",
         ["SCROLLBAR"] = "DxScrollBar",
-        ["WINDOW"] = "DxWindow"
+        ["WINDOW"] = "DxWindow",
+        ["LABEL"] = "DxLabel"
     }
 
     self.dxRootElements = {}

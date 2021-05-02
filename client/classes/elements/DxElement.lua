@@ -170,12 +170,18 @@ function DxElement:clickLeft(state, propagated)
     else
         self.dragging = false
 
+        
+        local scrollpane = self:inScrollPane()
+        local scrollpaneOffset = {
+            x = (scrollpane and scrollpane.drawOffset.x or 0),
+            y = (scrollpane and scrollpane.drawOffset.y or 0)
+        }
+
         if (self.parent and self.parent.type == DX_SCROLLPANE) then
-            self.baseX, self.baseY = self.x, self.y
+            self.baseX, self.baseY = self.x + -scrollpaneOffset.x, self.y + -scrollpaneOffset.y
         else
             self.baseX, self.baseY = self.x - (self.parent and self.parent.x or 0), self.y - (self.parent and self.parent.y or 0)
         end
-
         return true
     end
 
@@ -425,11 +431,18 @@ end
 
 function DxElement:getObstructingChild()
     local bounds = self:getInheritedBounds()
+    local scrollpane = (self.type == DX_SCROLLPANE) and self or self:inScrollPane()
+
+    if (self.type == DX_SCROLLPANE) or (self:inScrollPane()) then
+        if (not isMouseInPosition(scrollpane.x, scrollpane.y, scrollpane.width, scrollpane.height)) then
+            return false
+        end
+    end
+
     for i, child in ipairs(self.children) do
         local childBounds = child:getInheritedBounds()
         local pos = child:getAbsolutePosition()
 
-        local scrollpane = child:inScrollPane()
         local scrollpaneOffset = {
             x = (scrollpane and scrollpane.drawOffset.x or 0),
             y = (scrollpane and scrollpane.drawOffset.y or 0)
@@ -700,6 +713,7 @@ function DxElement:calculatePosition()
 
     if (self.dragging) then
         if (cursorX) and (cursorY) then
+            local scrollpane = self:inScrollPane()
             offsetX, offsetY = cursorX - self.clickInitialX, cursorY - self.clickInitialY
         end
     end

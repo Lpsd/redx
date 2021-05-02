@@ -73,11 +73,11 @@ function Style:getColor(...)
         return dxDebug("[Style:getColor] Invalid dx instance") and false
     end
 
-    return self:_getColor(self.dxInstance.type, ...)
+    return self:getColorByClass(self.dxInstance.type, ...)
 end
 
 
-function Style:_getColor(classType, colorType)
+function Style:getColorByClass(classType, colorType)
     if (not classType) then
         if (self.dxInstance) then
             classType = self.dxInstance.type
@@ -115,13 +115,13 @@ function Style:setColor(...)
         return dxDebug("[Style:setColor] Invalid dx instance") and false
     end
 
-    local set = self:_setColor(self.dxInstance.type, ...)
+    local set = self:setColorByClass(self.dxInstance.type, ...)
     self.dxInstance:forceUpdate()
     
     return set
 end
 
-function Style:_setColor(classType, colorType, r, g, b, a)
+function Style:setColorByClass(classType, colorType, r, g, b, a)
     r, g, b, a = tonumber(r), tonumber(g), tonumber(b), tonumber(a)
 
     if (not classType) then

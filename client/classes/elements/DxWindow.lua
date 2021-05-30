@@ -44,12 +44,21 @@ function DxWindow:constructor(titleText, titleHeight, scrollbarX, scrollbarY, sc
         self.scrollpane:setScrollBar(self.scrollbar.y.element)
     end
 
+    self:setDragArea(0, 0, self.width, self.titlebar.height)
+
     self:addRenderFunction(self.draw)
+
+    self.font = self.style:getFont("text")
 
     -- If we create another dx-element as a child of this one, set it as internal
     -- Note: scrollbars have already been set as internal above (if created)
     self.scrollpane.__internal = true
     -- ...
+
+    self:addPropertyListener("titlebar")
+
+    self.fOnPropertyChange = bind(self.onPropertyChange, self)
+    Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):addHandler(self, self.fOnPropertyChange)
 end
 
 -- *******************************************************************
@@ -61,12 +70,44 @@ function DxWindow:draw()
     local titlebarTextColor = self.style:getColor("titlebar_text")
 
     dxDrawRectangle(self.x, self.y, self.width, self.titlebar.height, tocolor(titlebarColor.r, titlebarColor.g, titlebarColor.b, titlebarColor.a))
-    dxDrawText(self.titlebar.text, self.x, self.y, self.x + self.width, self.y + self.titlebar.height, tocolor(titlebarTextColor.r, titlebarTextColor.g, titlebarTextColor.b, titlebarTextColor.a), 1, "default", "center", "center")
+    dxDrawText(self.titlebar.text, self.x, self.y, self.x + self.width, self.y + self.titlebar.height, tocolor(titlebarTextColor.r, titlebarTextColor.g, titlebarTextColor.b, titlebarTextColor.a), 1, self.font:getFont(14), "center", "center")
     dxDrawRectangle(self.x, self.y + self.titlebar.height, self.scrollpane.width, self.scrollpane.height, tocolor(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a))
 end
+
+-- *******************************************************************
 
 function DxWindow:onChildAdded(child)
     if (self.scrollpane) then
         child:setParent(self.scrollpane)
     end
+end
+
+function DxWindow:onPropertyChange(property, oldValue, newValue)
+    if (property == "titlebar") then
+
+    end
+end
+
+-- *******************************************************************
+
+function DxWindow:setTitlebarHeight(height)
+    height = tonumber(height)
+    if (not height) then
+        return false
+    end
+
+    -- Hack to trigger "titlebar" property listener on height change
+    local titlebar = self.titlebar
+    titlebar.height = height
+    self.titlebar = titlebar
+
+    if (self.scrollbar.y) then
+        local orientation = (self.scrollbar.orientation == "horizontal")
+        self.scrollbar.y.element:setSize(self.scrollbar.size, self.height - self.titlebar.height)
+        self.scrollbar.y.element:setPosition(self.width - self.scrollbar.size, 0 + self.titlebar.height)
+    end
+
+    self:setDragArea(0, 0, self.width, self.titlebar.height)
+
+    return true
 end

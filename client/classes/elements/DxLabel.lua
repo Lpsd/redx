@@ -20,7 +20,7 @@ function DxLabel:constructor(text, font, alignX, alignY, clip, wordBreak, colorC
     }
 
     self.text = text or "Default label text"
-    self.font = font or "default"
+    self.font = font or self.style:getFont("text")
 
     self.align = {
         x = (alignX == "left" or alignX == "center" or alignX == "right") and alignX or "left",
@@ -42,5 +42,5 @@ function DxLabel:drawText()
     dxDrawRectangle(self.x, self.y, self.width, self.height, tocolor(background.r, background.g, background.b, background.a))
 
     local color = self.style:getColor("text")
-    dxDrawText(self.text, self.x, self.y, self.x + self.width, self.y + self.height, tocolor(color.r, color.g, color.b, color.a), self.scale.x, self.scale.y, self.font, self.align.x, self.align.y, self.clip, self.wordBreak, false, self.colorCoded, true, self.rotation, self.rotationCenter.x, self.rotationCenter.y)
+    dxDrawText(self.text, self.x, self.y, self.x + self.width, self.y + self.height, tocolor(color.r, color.g, color.b, color.a), self.scale.x, self.scale.y, self.font:getFont(10), self.align.x, self.align.y, self.clip, self.wordBreak, false, self.colorCoded, true, self.rotation, self.rotationCenter.x, self.rotationCenter.y)
 end

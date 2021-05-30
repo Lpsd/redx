@@ -7,6 +7,9 @@
     <file src="meta.xml" />
     <file src="default.properties" />
 
+    <!-- Fonts -->
+    <file src="fonts/Montserrat-Regular.ttf" />
+
     <!-- Styles -->
     <file src="styles/default.xml" styleName="Default" default="true" />
     
@@ -27,10 +30,12 @@
         <script src="client/classes/Renderer.lua" type="client" />
         <script src="client/classes/Event.lua" type="client" />
         <script src="client/classes/Style.lua" type="client" />
+        <script src="client/classes/Font.lua" type="client" />
 
             <!-- Managers -->
             <script src="client/classes/managers/EventManager.lua" type="client" />
             <script src="client/classes/managers/StyleManager.lua" type="client" />
+            <script src="client/classes/managers/FontManager.lua" type="client" />
 
             <!-- Elements -->
             <script src="client/classes/elements/DxElement.lua" type="client" />

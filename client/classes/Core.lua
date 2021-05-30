@@ -8,6 +8,8 @@ Core = inherit(Singleton)
 function Core:constructor()
     self.renderer = Renderer:getInstance()
     self.eventManager = EventManager:getInstance()
+
+    self.fontManager = FontManager:getInstance()
     self.styleManager = StyleManager:getInstance()
     
     self.dxTypes = {

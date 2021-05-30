@@ -55,10 +55,43 @@ function Style:parseXML()
             if (styleType == "color") then
                 table.insert(self.classStyles[className][styleType], {
                     type = xmlNodeGetAttribute(styleNode, "type"),
-                    r = xmlNodeGetAttribute(styleNode, "r"),
-                    g = xmlNodeGetAttribute(styleNode, "g"),
-                    b = xmlNodeGetAttribute(styleNode, "b"),
-                    a = xmlNodeGetAttribute(styleNode, "a")
+                    r = tonumber(xmlNodeGetAttribute(styleNode, "r")),
+                    g = tonumber(xmlNodeGetAttribute(styleNode, "g")),
+                    b = tonumber(xmlNodeGetAttribute(styleNode, "b")),
+                    a = tonumber(xmlNodeGetAttribute(styleNode, "a"))
+                })
+            end
+
+            if (styleType == "size") then
+                table.insert(self.classStyles[className][styleType], {
+                    type = xmlNodeGetAttribute(styleNode, "type"),
+                    value = tonumber(xmlNodeGetAttribute(styleNode, "value"))
+                })
+            end
+            
+            if (styleType == "option") then
+                local value = xmlNodeGetAttribute(styleNode, "value")
+
+                if tonumber(value) then
+                    value = tonumber(value)
+                elseif (value == "true") then
+                    value = true
+                elseif (value == "false") then
+                    value = false
+                end
+
+                table.insert(self.classStyles[className][styleType], {
+                    type = xmlNodeGetAttribute(styleNode, "type"),
+                    value = value
+                })
+            end
+
+            if (styleType == "font") then
+                local fontName = xmlNodeGetAttribute(styleNode, "fontName")
+
+                table.insert(self.classStyles[className][styleType], {
+                    type = xmlNodeGetAttribute(styleNode, "type"),
+                    fontName = fontName
                 })
             end
         end
@@ -67,7 +100,125 @@ function Style:parseXML()
     return true
 end
 
--- returns r, g, b, a
+function Style:getSize(...)
+    if (not self.dxInstance) or (self.dxInstance and not self.dxInstance.__dx) then
+        return dxDebug("[Style:getSize] Invalid dx instance") and false
+    end
+
+    return self:getSizeByClass(self.dxInstance.type, ...)
+end
+
+function Style:getSizeByClass(classType, sizeType)
+    if (not classType) then
+        if (self.dxInstance) then
+            classType = self.dxInstance.type
+        else
+            return dxDebug("[Style:_getSizeByClass] Invalid classType provided: " .. tostring(classType))
+        end
+    end
+
+    local className = getDxClassNameFromType(classType)
+    local classStyle = self.classStyles[className]
+
+    if (not classStyle) then
+        return dxDebug("[Style:getSizeByClass] Class style not found: " .. tostring(className)) and false
+    end
+
+    local sizes = classStyle.size
+    local size
+
+    for i, s in ipairs(sizes) do
+        if (s.type == sizeType) then
+            size = s.value
+            break
+        end
+    end
+
+    if (not size) then
+        return dxDebug("[Style:getSizeByClass] Size type not found: " .. className .. "/" .. sizeType) and false
+    end
+
+    return size
+end
+
+function Style:getFont(...)
+    if (not self.dxInstance) or (self.dxInstance and not self.dxInstance.__dx) then
+        return dxDebug("[Style:getFont] Invalid dx instance") and false
+    end
+
+    return self:getFontByClass(self.dxInstance.type, ...)
+end
+
+function Style:getFontByClass(classType, fontType)
+    if (not classType) then
+        if (self.dxInstance) then
+            classType = self.dxInstance.type
+        else
+            return dxDebug("[Style:_getFontByClass] Invalid classType provided: " .. tostring(classType))
+        end
+    end
+
+    local className = getDxClassNameFromType(classType)
+    local classStyle = self.classStyles[className]
+
+    if (not classStyle) then
+        return dxDebug("[Style:getFontByClass] Class style not found: " .. tostring(className)) and false
+    end
+
+    if (not classStyle.font) then
+        return false
+    end
+
+    for i, font in ipairs(classStyle.font) do
+        if (font.type == fontType) then
+            return FontManager:getInstance():getFontContainer(font.fontName)
+        end
+    end
+
+    return dxDebug("[Style:getFontByClass] Font not found: " .. className .. "/" .. fontType) and false
+end
+
+function Style:getOption(...)
+    if (not self.dxInstance) or (self.dxInstance and not self.dxInstance.__dx) then
+        return dxDebug("[Style:getOption] Invalid dx instance") and false
+    end
+
+    return self:getOptionByClass(self.dxInstance.type, ...)
+end
+
+function Style:getOptionByClass(classType, optionType)
+    if (not classType) then
+        if (self.dxInstance) then
+            classType = self.dxInstance.type
+        else
+            return dxDebug("[Style:_getOptionByClass] Invalid classType provided: " .. tostring(classType))
+        end
+    end
+
+    local className = getDxClassNameFromType(classType)
+    local classStyle = self.classStyles[className]
+
+    if (not classStyle) then
+        return dxDebug("[Style:getOptionByClass] Class style not found: " .. tostring(className)) and false
+    end
+
+    local options = classStyle.option
+    local option
+
+    for i, o in ipairs(sizes) do
+        if (s.type == optionType) then
+            option = o.value
+            break
+        end
+    end
+
+    if (not option) then
+        return dxDebug("[Style:getOptionByClass] Option type not found: " .. className .. "/" .. optionType) and false
+    end
+
+    return option
+end
+
 function Style:getColor(...)
     if (not self.dxInstance) or (self.dxInstance and not self.dxInstance.__dx) then
         return dxDebug("[Style:getColor] Invalid dx instance") and false

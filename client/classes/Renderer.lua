@@ -21,16 +21,14 @@ end
 function Renderer:render()
     local core = Core:getInstance()
     for i = #core.dxRootElements, 1, -1 do
-        local element = core.dxRootElements[i]
-        element:render()
+        core.dxRootElements[i]:render()
     end
 end
 
 function Renderer:preRender()
     local core = Core:getInstance()
     for i = #core.dxRootElements, 1, -1 do
-        local element = core.dxRootElements[i]
-        element:preRender()
+        core.dxRootElements[i]:preRender()
     end
 end
 

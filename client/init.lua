@@ -16,8 +16,6 @@ function init()
 
     -- Testing
     dxTest()
-
-    iprint("Test took " .. tostring(getTickCount() - tick) .. "ms")
 end
 addEventHandler("onClientResourceStart", resourceRoot, init)
 
@@ -37,7 +35,10 @@ function dxTest()
     item3 = DxRect:new(50, 50, 50, 50, false, item2)
     item3.style:setColor("background", 99, 99, 99)
 
-    label = DxLabel:new(1500, 300, 200, 35, false, nil, "My first label", "default", "center", "center")
+    label = DxLabel:new(1500, 300, 200, 35, false, nil, "My first label", nil, "center", "center")
+    label:setDraggable(true)
+
+    window:setTitlebarHeight(50)
 end
 -- *******************************************************************
 

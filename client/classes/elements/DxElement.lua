@@ -56,7 +56,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self.style = styleManager:createStyleInstance(styleManager:getCurrentStyle(), self)
     self.style.dxInstance = self  
-
+    
     self.parent = false
     self.children = {}
 
@@ -167,6 +167,13 @@ function DxElement:clickLeft(state, propagated)
         local clickOrder = isRoot and self:getProperty("click_order") or self:getProperty("click_order_children")
         if (clickOrder) then
             self:bringToFront()
+        end
+
+        local clickOrderPropagate = (not isRoot) and self:getProperty("click_order_propagate")
+        if (clickOrderPropagate) then
+            for i, parent in ipairs(self:getInheritedParents()) do
+                parent:bringToFront()
+            end
         end
         
         return true
@@ -316,6 +323,12 @@ function DxElement:setSize(width, height, relative)
     self.clickArea.height = self.clickArea.changed and self.clickArea.height or self.baseHeight    
 
     self:forceUpdate()
+
+    self:calculateSize()
+
+    if (self.onSizeUpdated) then
+        self:onSizeUpdated()
+    end
 
     return true
 end
@@ -714,9 +727,10 @@ end
 
 function DxElement:calculatePosition()
     local offsetX, offsetY = 0, 0
-    local cursorX, cursorY = getAbsoluteCursorPosition()
 
     if (self.dragging) then
+        local cursorX, cursorY = getAbsoluteCursorPosition()
+        
         if (cursorX) and (cursorY) then
             offsetX, offsetY = cursorX - self.clickInitialX, cursorY - self.clickInitialY
         end

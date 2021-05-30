@@ -73,3 +73,20 @@ end
 function DxScrollBar:getMaxThumbPosition()
     return (self:isVertical()) and (self.thumb.height - self.trackbar.height) or (self.thumb.width - self.trackbar.width)
 end
+
+-- *******************************************************************
+
+function DxScrollBar:onSizeUpdated()
+    if (self.negativeButton) then
+        self.negativeButton:setPosition(0, 0)
+    end
+
+    if (self.positiveButton) then
+        self.positiveButton:setPosition(self:isVertical() and 0 or self.width - self.buttonSize, self:isVertical() and self.height - self.buttonSize or 0)
+    end
+
+    if (self.trackbar) then
+        self.trackbar:setPosition((not self:isVertical() and self.buttonSize or 0), (self:isVertical() and self.buttonSize or 0))
+        self.trackbar:setSize(self.width - (not self:isVertical() and (self.buttonSize * 2) or 0), self.height - (self:isVertical() and self.buttonSize * 2 or 0))
+    end
+end

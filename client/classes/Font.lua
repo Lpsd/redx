@@ -46,6 +46,6 @@ end
 
 -- *******************************************************************
 
-function Font:getFont(size)
+function Font:getFontBySize(size)
     return self.fonts[size]
 end

@@ -10,6 +10,9 @@
     <!-- Fonts -->
     <file src="fonts/Montserrat-Regular.ttf" />
 
+    <!-- Images -->
+    <file src="images/kfc.png" />
+
     <!-- Styles -->
     <file src="styles/default.xml" styleName="Default" default="true" />
     
@@ -40,6 +43,7 @@
             <!-- Elements -->
             <script src="client/classes/elements/DxElement.lua" type="client" />
             <script src="client/classes/elements/DxRect.lua" type="client" />
+            <script src="client/classes/elements/DxImage.lua" type="client" />
             <script src="client/classes/elements/DxLabel.lua" type="client" />
             <script src="client/classes/elements/DxScrollBar.lua" type="client" />
             <script src="client/classes/elements/DxScrollPane.lua" type="client" />

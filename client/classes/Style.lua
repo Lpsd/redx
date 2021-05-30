@@ -87,11 +87,12 @@ function Style:parseXML()
             end
 
             if (styleType == "font") then
-                local fontName = xmlNodeGetAttribute(styleNode, "fontName")
+                local name = xmlNodeGetAttribute(styleNode, "name")
 
                 table.insert(self.classStyles[className][styleType], {
                     type = xmlNodeGetAttribute(styleNode, "type"),
-                    fontName = fontName
+                    size = tonumber(xmlNodeGetAttribute(styleNode, "size")),
+                    name = name
                 })
             end
         end
@@ -171,7 +172,8 @@ function Style:getFontByClass(classType, fontType)
 
     for i, font in ipairs(classStyle.font) do
         if (font.type == fontType) then
-            return FontManager:getInstance():getFontContainer(font.fontName)
+            iprint(font)
+            return FontManager:getInstance():getFontContainer(font.name), font.size
         end
     end
 

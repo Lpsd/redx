@@ -30,7 +30,7 @@ function FontManager:constructor()
         ["beckett"] = true
     }
 
-    self.defaultQuality = "proof"
+    self.defaultQuality = "antialiased"
     self.defaultSizes = 16
 
     -- Include MTA fonts

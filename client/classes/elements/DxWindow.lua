@@ -48,7 +48,7 @@ function DxWindow:constructor(titleText, titleHeight, scrollbarX, scrollbarY, sc
 
     self:addRenderFunction(self.draw)
 
-    self.font = self.style:getFont("text")
+    self.font, self.fontSize = self.style:getFont("titlebar")
 
     -- If we create another dx-element as a child of this one, set it as internal
     -- Note: scrollbars have already been set as internal above (if created)
@@ -70,7 +70,7 @@ function DxWindow:draw()
     local titlebarTextColor = self.style:getColor("titlebar_text")
 
     dxDrawRectangle(self.x, self.y, self.width, self.titlebar.height, tocolor(titlebarColor.r, titlebarColor.g, titlebarColor.b, titlebarColor.a))
-    dxDrawText(self.titlebar.text, self.x, self.y, self.x + self.width, self.y + self.titlebar.height, tocolor(titlebarTextColor.r, titlebarTextColor.g, titlebarTextColor.b, titlebarTextColor.a), 1, self.font:getFont(14), "center", "center")
+    dxDrawText(self.titlebar.text, self.x, self.y, self.x + self.width, self.y + self.titlebar.height, tocolor(titlebarTextColor.r, titlebarTextColor.g, titlebarTextColor.b, titlebarTextColor.a), 1, self.font:getFontBySize(self.fontSize), "center", "center")
     dxDrawRectangle(self.x, self.y + self.titlebar.height, self.scrollpane.width, self.scrollpane.height, tocolor(backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a))
 end
 
@@ -101,13 +101,33 @@ function DxWindow:setTitlebarHeight(height)
     titlebar.height = height
     self.titlebar = titlebar
 
+    self:recalculateSizeAndPosition()
+end
+
+function DxWindow:recalculateSizeAndPosition()
+    if (not self.scrollbar) then
+        return false
+    end
+    
     if (self.scrollbar.y) then
-        local orientation = (self.scrollbar.orientation == "horizontal")
         self.scrollbar.y.element:setSize(self.scrollbar.size, self.height - self.titlebar.height)
         self.scrollbar.y.element:setPosition(self.width - self.scrollbar.size, 0 + self.titlebar.height)
     end
 
-    self:setDragArea(0, 0, self.width, self.titlebar.height)
+    if (self.scrollbar.x) then
+        self.scrollbar.x.element:setSize(self.width, self.scrollbar.size)
+        self.scrollbar.x.element:setPosition(0, self.height - self.scrollbar.size)
+    end
 
+    if (self.scrollpane) then
+        self.scrollpane:setSize(self.width - (self.scrollbar.y and self.scrollbar.size or 0), self.height - self.titlebar.height - (self.scrollbar.x and self.scrollbar.size or 0))
+        self.scrollpane:setPosition(0, self.titlebar.height)
+    end
+
+    self:setDragArea(0, 0, self.width, self.titlebar.height)
     return true
+end
+
+function DxWindow:onSizeUpdated()
+    self:recalculateSizeAndPosition()
 end

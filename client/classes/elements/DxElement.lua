@@ -56,7 +56,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
 
     self.style = styleManager:createStyleInstance(styleManager:getCurrentStyle(), self)
     self.style.dxInstance = self  
-    
+
     self.parent = false
     self.children = {}
 
@@ -500,6 +500,9 @@ function DxElement:getInheritedBounds(includeScrollpaneElements)
         if (childScrollpane and includeScrollpaneElements) or (not childScrollpane) then
             local childPos = child:getAbsolutePosition()
 
+            local scrollbarX = childScrollpane and childScrollpane.scrollbars.x or false
+            local scrollbarY = childScrollpane and childScrollpane.scrollbars.y or false
+
             if ((childPos.x - pos.x) < bounds.x.min) then
                 bounds.x.min = (childPos.x - pos.x) 
             end
@@ -508,11 +511,11 @@ function DxElement:getInheritedBounds(includeScrollpaneElements)
                 bounds.y.min = (childPos.y - pos.y) 
             end
 
-            if ((childPos.x + child.width) - pos.x > bounds.x.max) then
+            if (childPos.x + child.width) - pos.x > bounds.x.max - (scrollbarX and (scrollbarX.height / 2) or 0) then
                 bounds.x.max = (childPos.x + child.width) - pos.x
             end
 
-            if ((childPos.y + child.height) - pos.y > bounds.y.max) then
+            if (childPos.y + child.height) - pos.y > bounds.y.max - (scrollbarY and (scrollbarY.width / 2) or 0) then
                 bounds.y.max = (childPos.y + child.height) - pos.y
             end
         end
@@ -760,6 +763,21 @@ function DxElement:calculatePosition()
 
         if (bounds.y.max > parentBounds.y.max) then
             self.y = parentBounds.y.max - self.height
+        end
+    end
+
+    local scrollpane = self:inScrollPane()
+
+    if (scrollpane) and (self:getRootElement().type == DX_WINDOW) then
+        local rootParent = self:getRootElement()
+        local offsetX, offsetY = round(scrollpane.drawOffset.x, 0), round(scrollpane.drawOffset.y, 0)
+
+        if (rootParent.x + self.x < rootParent.x + offsetX) then
+            self.x = offsetX
+        end
+
+        if (rootParent.y + self.y < rootParent.y + offsetY) then
+            self.y = offsetY
         end
     end
 end

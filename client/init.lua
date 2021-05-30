@@ -22,7 +22,11 @@ addEventHandler("onClientResourceStart", resourceRoot, init)
 -- *******************************************************************
 
 function dxTest()
-    window = DxWindow:new(500, 300, 400, 400, false, nil, "Test Window", 35, true, true)
+    local renderer = Renderer:getInstance()
+    local screenWidth, screenHeight = renderer.screenWidth, renderer.screenHeight
+
+    local windowSize = (screenWidth / 3)
+    window = DxWindow:new((screenWidth / 2) - (windowSize / 2), (screenHeight / 2) - (windowSize / 2), windowSize, windowSize, false, nil, "Test Window", 35, true, true)
     window:setDraggable(true)
 
     item = DxRect:new(25, 25, 100, 100, false, window)
@@ -35,10 +39,13 @@ function dxTest()
     item3 = DxRect:new(50, 50, 50, 50, false, item2)
     item3.style:setColor("background", 99, 99, 99)
 
-    label = DxLabel:new(1500, 300, 200, 35, false, nil, "My first label", nil, "center", "center")
-    label:setDraggable(true)
+    label = DxLabel:new(0, 0, 100, 50, false, item, "My first label", nil, "center", "center")
+
+    image = DxImage:new(windowSize / 2 - 61 / 2, (windowSize / 2) - (82 / 2) - window.titlebar.height, 61, 82, false, window, "images/kfc.png")
 
     window:setTitlebarHeight(50)
+
+    window:setSize(300, 300)
 end
 -- *******************************************************************
 

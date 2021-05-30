@@ -5,11 +5,15 @@
         <color type="titlebar" r=44 g=44 b=44 a=255 /> 
         <color type="titlebar_text" r=255 g=255 b=255 a=255 /> 
 
-        <font type="text" fontName="montserrat" />
+        <font type="titlebar" name="montserrat" size=14 />
     </class>
 
     <class name="DxRect">
         <color type="background" r=44 g=44 b=44 a=255 />
+    </class>
+
+    <class name="DxImage">
+        <color type="image" r=255 g=255 b=255 a=255 />
     </class>
 
     <class name="DxLabel">
@@ -24,7 +28,7 @@
         <option type="show_border_right" value=true />
         <option type="show_border_bottom" value=true />
 
-        <font type="text" fontName="montserrat" />
+        <font type="text" name="montserrat" size=10 />
     </class>
 
     <class name="DxScrollPane">

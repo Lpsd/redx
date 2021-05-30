@@ -17,7 +17,8 @@ function Core:constructor()
         "SCROLLPANE",
         "SCROLLBAR",
         "WINDOW",
-        "LABEL"
+        "LABEL",
+        "IMAGE"
     }
 
     self.dxTypesClass = {
@@ -25,7 +26,8 @@ function Core:constructor()
         ["SCROLLPANE"] = "DxScrollPane",
         ["SCROLLBAR"] = "DxScrollBar",
         ["WINDOW"] = "DxWindow",
-        ["LABEL"] = "DxLabel"
+        ["LABEL"] = "DxLabel",
+        ["IMAGE"] = "DxImage"
     }
 
     self.dxRootElements = {}

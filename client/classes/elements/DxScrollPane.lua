@@ -136,7 +136,10 @@ function DxScrollPane:drawRenderTarget()
     local color = self.style:getColor("background")
 
     dxDrawRectangle(self.x, self.y, self.width, self.height, tocolor(color.r, color.g, color.b, color.a))
+
+    dxSetBlendMode("add")       -- Set 'add' when drawing the render target on the screen
     dxDrawImage(self.x, self.y, self.width, self.height, self.renderTarget)
+    dxSetBlendMode("blend")     -- Restore default blending
 end
 
 -- *******************************************************************
@@ -198,7 +201,9 @@ function DxScrollPane:updateRenderTarget()
 
     for i = #self.children, 1, -1 do
         local child = self.children[i]
-        child:setPositionOffset(-self.x + self.drawOffset.x, -self.y + self.drawOffset.y)
+        local offsetX, offsetY = round(self.drawOffset.x, 0), round(self.drawOffset.y, 0)
+        
+        child:setPositionOffset(-self.x + offsetX, -self.y + offsetY)
         child:render()
         child:setPositionOffset(0, 0)
     end

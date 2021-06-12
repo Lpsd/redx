@@ -18,17 +18,25 @@ function Renderer:constructor()
     addEventHandler("onClientClick", root, self.fHandleClick)
 end
 
-function Renderer:render()
+function Renderer:render(elements)
     local core = Core:getInstance()
-    for i = #core.dxRootElements, 1, -1 do
-        core.dxRootElements[i]:render()
+    elements = (type(elements) == "table") and elements or core.dxRootElements
+
+    for i = #elements, 1, -1 do
+        if (elements[i].__dx) then
+            elements[i]:render()
+        end
     end
 end
 
-function Renderer:preRender()
+function Renderer:preRender(elements)
     local core = Core:getInstance()
-    for i = #core.dxRootElements, 1, -1 do
-        core.dxRootElements[i]:preRender()
+    elements = (type(elements) == "table") and elements or core.dxRootElements
+
+    for i = #elements, 1, -1 do
+        if (elements[i].__dx) then
+            elements[i]:preRender()
+        end
     end
 end
 

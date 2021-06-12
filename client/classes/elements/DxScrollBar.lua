@@ -54,15 +54,16 @@ function DxScrollBar:setThumbSize(size)
 end
 
 function DxScrollBar:getThumbSize()
-    return self.thumb.size
+    return self:isVertical() and self.thumb.height or self.thumb.width
 end
 
 -- *******************************************************************
 
 function DxScrollBar:getThumbPosition()
-    local thumbPos = self.thumb:getAbsolutePosition()
-    local trackbarPos = self.trackbar:getAbsolutePosition()
-    return (self:isVertical()) and (self.thumb.y - self.trackbar.y) or (self.thumb.x - self.trackbar.x)
+    local isVertical = self:isVertical()
+    local pos = (isVertical) and (self.thumb.y - self.trackbar.y) or (self.thumb.x - self.trackbar.x)
+
+    return pos
 end
 
 function DxScrollBar:setThumbPosition(pos)
@@ -72,6 +73,12 @@ end
 
 function DxScrollBar:getMaxThumbPosition()
     return (self:isVertical()) and (self.thumb.height - self.trackbar.height) or (self.thumb.width - self.trackbar.width)
+end
+
+-- *******************************************************************
+
+function DxScrollBar:getTrackbarSize()
+    return self:isVertical() and self.trackbar.height or self.trackbar.width
 end
 
 -- *******************************************************************

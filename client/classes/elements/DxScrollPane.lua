@@ -47,14 +47,15 @@ function DxScrollPane:processScrollbars()
     local scrollbarX, scrollbarY = self.scrollbars.x, self.scrollbars.y
 
     if (scrollbarX) then
+        local trackbarSize = scrollbarX:getTrackbarSize()
         local overflow = (self.width / bounds.x.max)
 
         if (not scrollbarX.thumb.dragging) then
-            scrollbarX:setThumbSize(scrollbarX.trackbar.width * overflow)
+            scrollbarX:setThumbSize(math.min(trackbarSize * overflow, trackbarSize))
         end
 
         local offset = self.drawOffset.x
-        self.drawOffset.x = -scrollbarX:getThumbPosition() * (bounds.x.max / self.width)
+        self.drawOffset.x = -scrollbarX:getThumbPosition() * (bounds.x.max / trackbarSize)
         
         if (self.drawOffset.x ~= offset) then
             self:updateRenderTarget()
@@ -62,14 +63,15 @@ function DxScrollPane:processScrollbars()
     end
 
     if (scrollbarY) then
+        local trackbarSize = scrollbarY:getTrackbarSize()
         local overflow = (self.height / bounds.y.max)
 
         if (not scrollbarY.thumb.dragging) then
-            scrollbarY:setThumbSize(scrollbarY.trackbar.height * overflow)
+            scrollbarY:setThumbSize(math.min(trackbarSize * overflow, trackbarSize))
         end
 
         local offset = self.drawOffset.y
-        self.drawOffset.y = -scrollbarY:getThumbPosition() * (bounds.y.max / self.height)
+        self.drawOffset.y = -scrollbarY:getThumbPosition() * (bounds.y.max / trackbarSize)
 
         if (self.drawOffset.y ~= offset) then
             self:updateRenderTarget()
@@ -199,13 +201,20 @@ function DxScrollPane:updateRenderTarget()
     dxSetRenderTarget(self.renderTarget, true) -- Start render target drawing
     dxSetBlendMode("modulate_add")  -- Set blend mode
 
+    local renderer = Renderer:getInstance()
+
     for i = #self.children, 1, -1 do
         local child = self.children[i]
-        local offsetX, offsetY = round(self.drawOffset.x, 0), round(self.drawOffset.y, 0)
+        local offsetX, offsetY = self.drawOffset.x, self.drawOffset.y
+
+        local pos = { x = child.baseX + offsetX, y = child.baseY + offsetY}
+        local bounds = child:getInheritedBounds()
         
-        child:setPositionOffset(-self.x + offsetX, -self.y + offsetY)
-        child:render()
-        child:setPositionOffset(0, 0)
+        if (pos.x + bounds.x.min < self.width) and (pos.y + bounds.y.min < self.height) and (pos.x > -bounds.x.max) and (pos.y > -bounds.y.max) then
+            child:setPositionOffset(-self.x + offsetX, -self.y + offsetY)
+            renderer:render({child})
+            child:setPositionOffset(0, 0)   
+        end
     end
 
     dxSetBlendMode("blend") -- Restore default blending

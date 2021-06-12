@@ -5,7 +5,7 @@
         <color type="titlebar" r=44 g=44 b=44 a=255 /> 
         <color type="titlebar_text" r=255 g=255 b=255 a=255 /> 
 
-        <font type="titlebar" name="montserrat" size=14 />
+        <font type="titlebar" name="montserrat" size=12 />
     </class>
 
     <class name="DxRect">

@@ -85,7 +85,7 @@ function DxScrollPane:getScrollBar()
     return self.scrollbar
 end
 
-function DxScrollPane:setScrollBar(scrollbar)
+function DxScrollPane:addScrollBar(scrollbar)
     if (not isDxElement(scrollbar)) then
         return false
     end
@@ -93,8 +93,7 @@ function DxScrollPane:setScrollBar(scrollbar)
     local orientation = scrollbar:isVertical() and "y" or "x"
 
     if (self.scrollbars[orientation]) then
-        Core:getInstance():getEventManager():getEventFromName("onDxPropertyChange"):removeHandler(self.scrollbars[orientation].thumb, self.fOnPropertyChange)
-        self.scrollbars[orientation].thumb:removePropertyListener(orientation)
+        return false
     end
 
     self.scrollbars[orientation] = scrollbar

@@ -75,6 +75,7 @@ function DxElement:virtual_constructor(x, y, width, height, relative, parent)
     self.dragging = false
 
     self.renderWithChildren = true
+    self.visible = true
 
     self:setPosition(x, y, relative)
     self:setSize(width, height, relative)
@@ -700,6 +701,14 @@ function DxElement:isRoot()
     return not self.parent
 end
 
+function DxElement:isRootInScrollPane()
+    if (not self.parent) or (not self:inScrollPane()) then
+        return false
+    end
+
+    return (self.parent.type == DX_SCROLLPANE)
+end
+
 -- *******************************************************************
 
 function DxElement:setProperty(name, val)
@@ -749,20 +758,22 @@ function DxElement:calculatePosition()
         local bounds = self:getBounds()
         local parentBounds = self:getParentBounds()
 
-        if (bounds.x.min < parentBounds.x.min) then
-            self.x = parentBounds.x.min
+        local is_root = self:isRootInScrollPane()
+
+        if (bounds.x.min + (is_root and parentBounds.x.min or 0) < parentBounds.x.min) then
+            self.x = parentBounds.x.min - (is_root and parentBounds.x.min or 0)
         end
 
-        if (bounds.x.max > parentBounds.x.max) then
-            self.x = parentBounds.x.max - self.width
+        if (bounds.x.max + (is_root and parentBounds.x.min or 0) > parentBounds.x.max) then
+            self.x = parentBounds.x.max - self.width - (is_root and parentBounds.x.min or 0)
         end
 
-        if (bounds.y.min < parentBounds.y.min) then
-            self.y = parentBounds.y.min
+        if (bounds.y.min + (is_root and parentBounds.y.min or 0) < parentBounds.y.min) then
+            self.y = parentBounds.y.min - (is_root and parentBounds.y.min or 0)
         end
 
-        if (bounds.y.max > parentBounds.y.max) then
-            self.y = parentBounds.y.max - self.height
+        if (bounds.y.max + (is_root and parentBounds.y.min or 0) > parentBounds.y.max) then
+            self.y = parentBounds.y.max - self.height - (is_root and parentBounds.y.min or 0)
         end
     end
 
@@ -939,6 +950,17 @@ end
 
 function DxElement:getClickPropagationEnabled()
     return self:getProperty("click_propagate")
+end
+
+-- *******************************************************************
+
+function DxScrollBar:setVisible(state)
+    self.visible = (type(state) == "boolean") and state or self.visible
+    return true
+end
+
+function DxScrollBar:isVisible()
+    return self.visible
 end
 
 -- *******************************************************************

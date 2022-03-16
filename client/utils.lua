@@ -1,32 +1,26 @@
--- Author: Lpsd (https://github.com/Lpsd/)
+-- Author: Lpsd (https://github.com/Lpsd/redx)
 -- See the LICENSE file @ root directory
 
-function isMouseInPosition ( x, y, width, height )
-	if ( not isCursorShowing( ) ) then
-		return false
-	end
-	local sx, sy = guiGetScreenSize ( )
-	local cx, cy = getCursorPosition ( )
-	local cx, cy = ( cx * sx ), ( cy * sy )
-	
-	return ( ( cx >= x and cx <= x + width ) and ( cy >= y and cy <= y + height ) )
+function isDx(dx)
+    return instanceof(dx, Dx) or instanceof(dx, Dx, true)
 end
 
 function getAbsoluteCursorPosition()
-    local cursorX, cursorY = getCursorPosition()
-    
-    if (not cursorX) then
+    if (not isCursorShowing()) then
+        return 0, 0
+    end
+
+    local x, y = getCursorPosition()
+
+    return (x * SCREEN_WIDTH), (y * SCREEN_HEIGHT)
+end
+
+function isMouseInPosition(x, y, width, height)
+    if (not isCursorShowing()) then
         return false
     end
 
-    local renderer = Renderer:getInstance()
+    local cx, cy = getAbsoluteCursorPosition()
 
-	return (cursorX * renderer.screenWidth), (cursorY * renderer.screenHeight)
-end
-
-function isDxElement(e)
-    if (e) and (e.__dx) then
-        return true
-    end
-    return false
+    return ((cx >= x and cx <= x + width) and (cy >= y and cy <= y + height))
 end

@@ -1,51 +1,9 @@
--- Author: Lpsd (https://github.com/Lpsd/)
+-- Author: Lpsd (https://github.com/Lpsd/redx)
 -- See the LICENSE file @ root directory
 
--- *******************************************************************
 Core = inherit(Singleton)
--- *******************************************************************
+inherit(Autoloader, Core)
 
 function Core:constructor()
-    self.renderer = Renderer:getInstance()
-    self.eventManager = EventManager:getInstance()
-
-    self.fontManager = FontManager:getInstance()
-    self.styleManager = StyleManager:getInstance()
-    
-    self.dxTypes = {
-        "RECT",
-        "SCROLLPANE",
-        "SCROLLBAR",
-        "WINDOW",
-        "LABEL",
-        "IMAGE"
-    }
-
-    self.dxTypesClass = {
-        ["RECT"] = "DxRect",
-        ["SCROLLPANE"] = "DxScrollPane",
-        ["SCROLLBAR"] = "DxScrollBar",
-        ["WINDOW"] = "DxWindow",
-        ["LABEL"] = "DxLabel",
-        ["IMAGE"] = "DxImage"
-    }
-
-    self.dxRootElements = {}
-    self.dxFocusedElements = {}
-
-    self.debugMode = true
-
-    enum(self.dxTypes, "DX")
-
-    self.eventManager:addEvent("onDxPropertyChange", true)
-end
-
--- *******************************************************************
-
-function Core:getRenderer()
-    return self.renderer
-end
-
-function Core:getEventManager()
-    return self.eventManager
+    self:loadClasses()
 end

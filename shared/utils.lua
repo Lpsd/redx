@@ -1,47 +1,80 @@
-local charset = {}
+-- Author: Lpsd (https://github.com/Lpsd/redx)
+-- See the LICENSE file @ root directory
 
--- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
-for i = 48,  57 do table.insert(charset, string.char(i)) end
-for i = 65,  90 do table.insert(charset, string.char(i)) end
-for i = 97, 122 do table.insert(charset, string.char(i)) end
-
-function string.random(length)
-    if length > 0 then
-        return string.random(length - 1) .. charset[math.random(1, #charset)]
+function string:split(sep)
+    sep = (type(sep) == "string" and sep ~= "") and sep or " "
+    local result = {}
+    local regex = ("([^%s]+)"):format(sep)
+    for each in self:gmatch(regex) do
+        table.insert(result, each)
     end
-
-    return ""
+    return result
 end
 
-function math.clamp(num, min, max)
-    return (num <= min) and min or (num >= max) and max or num
+local function getLogStamp()
+    return os.date("%H:%M:%S") .. " [" .. MTA_PLATFORM .. "]"
 end
 
-function dxDebug(...)
-    if (true) then
-        return iprint("[DX Library]", ...)
+function iprintd(...)
+    return iprint("redx@" .. getLogStamp(), ...)
+end
+
+function isVector(vector)
+    if (type(vector) ~= "userdata") then
+        return false
     end
-    return false
+
+    local vector_type = getUserdataType(vector)
+
+    if (not vector_type:match("vector")) then
+        return false
+    end
+
+    return true, vector_type
+end
+
+function getVectorDimensions(vector)
+    local is_vector, vector_type = isVector(vector)
+
+    if (not is_vector) then
+        return false
+    end
+
+    return vector_type:split("vector")[1]
 end
 
 function enum(tbl, prefix)
-	if (type(tbl) ~= "table" or #tbl == 0 or (prefix and type(prefix) ~= "string")) then
-		return
-	end
-	
-	for i, v in ipairs(tbl) do
-		local index = (prefix and prefix .. '_' or '') .. v
-		
-		if (not _G[index]) then
-			_G[index] = i
-		end
-	end
+    if (type(tbl) ~= "table" or #tbl == 0 or (prefix and type(prefix) ~= "string")) then
+        return
+    end
+
+    for i, v in ipairs(tbl) do
+        local index = (prefix and prefix .. "_" or "") .. v
+
+        if (not _G[index]) then
+            _G[index] = i
+        end
+    end
+end
+
+function getIndexes(tbl)
+    if (type(tbl) ~= "table") then
+        return false
+    end
+
+    local t = {}
+
+    for i in pairs(tbl) do
+        t[#t + 1] = i
+    end
+
+    return t
 end
 
 function deepcopy(orig)
     local orig_type = type(orig)
     local copy
-    if orig_type == 'table' then
+    if orig_type == "table" then
         copy = {}
         for orig_key, orig_value in next, orig, nil do
             copy[deepcopy(orig_key)] = deepcopy(orig_value)
@@ -51,13 +84,4 @@ function deepcopy(orig)
         copy = orig
     end
     return copy
-end
-
-function round(num, numDecimalPlaces)
-  local mult = 10^(numDecimalPlaces or 0)
-  return math.floor(num * mult + 0.5) / mult
-end
-
-function remap(x, in_min, in_max, out_min, out_max)
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 end

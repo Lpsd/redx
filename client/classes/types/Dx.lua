@@ -11,7 +11,6 @@ function Dx:constructor()
 end
 
 function Dx:virtual_constructor(x, y, width, height, color, parent, name)
-    
     if (isVector(x)) then
         width = y
         x, y = x.x, x.y
@@ -108,11 +107,12 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     self.x, self.y = tonumber(x) or 0, tonumber(y) or 0
     self.absoluteX, self.absoluteY = self.x, self.y
 
-    self.width, self.height = tonumber(width) and math.max(self.minWidth, width) or self.minWidth, tonumber(width) and math.max(self.minHeight, height) or self.minHeight
+    self.width, self.height =
+        tonumber(width) and math.max(self.minWidth, width) or self.minWidth,
+        tonumber(width) and math.max(self.minHeight, height) or self.minHeight
 
     self.color = tonumber(color) or tocolor(33, 33, 33)
-
-    self:addRenderFunction(self.checkForCanvas, true)
+    
     self:addRenderFunction(self.updatePosition, true)
 
     local func = bind(self.onVisualPropertyChange, self)
@@ -121,8 +121,6 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     self:addPropertyListener("width", func, false)
     self:addPropertyListener("height", func, false)
     self:addPropertyListener("index", func, false)
-    self:addPropertyListener("children", func, false)
-    self:addPropertyListener("parent", func, false)
     self:addPropertyListener("canvas", func, false)
 
     self.lastLogMs = 0
@@ -154,7 +152,8 @@ function Dx:get(property)
     local class = getmetatable(self).__class
 
     if (rawget(self, "propertyListeners")[property]) then
-        return (class.properties) and (class.properties[property]) or rawget(self, "properties")[property] or rawget(self, property)
+        return (class.properties) and (class.properties[property]) or rawget(self, "properties")[property] or
+            rawget(self, property)
     end
 
     return class[property] or rawget(self, property)
@@ -165,16 +164,12 @@ function Dx:set(property, newValue)
 
     if (func) then
         local properties = rawget(self, "properties")
-        
+
         rawset(self, property, nil)
 
         if (properties[property] ~= newValue) then
             properties[property] = newValue
             rawset(self, "properties", properties)
-
-            if (self.name == "rect") then
-                iprintd(self.name, property, "updated")
-            end
 
             if (type(func) == "function") then
                 func(property)
@@ -457,7 +452,7 @@ function Dx:getPosition(absolute)
     return self.absoluteX, self.absoluteY
 end
 
-function Dx:updatePosition(force)
+function Dx:updatePosition(updateAbsolute)
     self.previousX, self.previousY = self.x, self.y
 
     local offset = {
@@ -499,15 +494,18 @@ function Dx:updatePosition(force)
         end
     end
 
-    if (self.forceUpdatePosition == true) or ((not force) and ((self.x ~= pos.x) or (self.y ~= pos.y) or true)) then
-        self.forceUpdatePosition = false
-        self:setPosition(pos.x, pos.y)
+    if ((self.x ~= pos.x) or (self.y ~= pos.y)) or (updateAbsolute) then
+        self:setPosition(pos.x, pos.y, updateAbsolute)
     end
 end
 
-function Dx:setPosition(x, y)
+function Dx:setPosition(x, y, updateAbsolute)
     if (self:isRootInstance()) then
         return false
+    end
+
+    if (type(updateAbsolute) == "nil") then
+        updateAbsolute = false
     end
 
     local pos = {
@@ -520,15 +518,26 @@ function Dx:setPosition(x, y)
     end
 
     local previousX, previousY = self.x, self.y
-    self.x, self.y = (self.frozen.x) and self.x or pos.x, (self.frozen.y) and self.y or pos.y
+    local newX, newY = (self.frozen.x) and self.x or pos.x, (self.frozen.y) and self.y or pos.y
 
-    local ancestorOffset = self:getAncestorOffset()
+    if (newX ~= previousX) or (newY ~= previousY) or (updateAbsolute) then
+        if (newX ~= previousX) then
+            self.x = newX
+        end
 
-    self.absoluteX, self.absoluteY =
-        (self.frozen.x) and self.absoluteX or (pos.x + ancestorOffset.x),
-        (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
+        if (newY ~= previousY) then
+            self.y = newY
+        end
 
-    self:doPropagate("onForceUpdatePosition", true)
+        local ancestorOffset = self:getAncestorOffset()
+
+        self.absoluteX, self.absoluteY =
+            (self.frozen.x) and self.absoluteX or (pos.x + ancestorOffset.x),
+            (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
+
+        self:doPropagate("onForceUpdatePosition", true)
+    end
+
     return true
 end
 
@@ -793,7 +802,7 @@ function Dx:doPropagate(method, inherited, ...)
 end
 
 function Dx:onForceUpdatePosition(ancestor)
-    self.forceUpdatePosition = true
+    self:updatePosition(true)
 end
 
 function Dx:setFrozen(pos, state)

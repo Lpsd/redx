@@ -8,7 +8,7 @@ function Rect:constructor(x, y, width, height, color)
 end
 
 function Rect:pre_constructor()
-    self.minWidth, self.minHeight = 100, 100
+    
 end
 
 function Rect:draw(x, y)

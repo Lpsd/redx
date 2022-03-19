@@ -11,6 +11,7 @@ function Dx:constructor()
 end
 
 function Dx:virtual_constructor(x, y, width, height, color, parent, name)
+    
     if (isVector(x)) then
         width = y
         x, y = x.x, x.y
@@ -24,6 +25,13 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     parent = isDx(parent) and parent or DxRootInstance
 
     self.propertyListeners = {}
+    self.properties = {}
+
+    -- Used for property listeners
+    local mt = getmetatable(self)
+    mt.__newindex = self.set
+    mt.__index = self.get
+    setmetatable(self, mt)
 
     self.type = DX_BASE
     self.name = name
@@ -38,6 +46,8 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         render = {},
         preRender = {}
     }
+
+    self.minWidth, self.minHeight = 0, 0
 
     self.click = {
         left = {
@@ -91,12 +101,6 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
 
     self.properties = deepcopy(DxProperties)
 
-    -- Used for property listeners
-    local mt = getmetatable(self)
-    mt.__newindex = self.set
-    mt.__index = self.get
-    setmetatable(self, mt)
-
     if (self.pre_constructor) then
         self:pre_constructor()
     end
@@ -104,12 +108,22 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     self.x, self.y = tonumber(x) or 0, tonumber(y) or 0
     self.absoluteX, self.absoluteY = self.x, self.y
 
-    self.width, self.height = tonumber(width) or self.minWidth, tonumber(height) or self.minHeight
+    self.width, self.height = tonumber(width) and math.max(self.minWidth, width) or self.minWidth, tonumber(width) and math.max(self.minHeight, height) or self.minHeight
 
     self.color = tonumber(color) or tocolor(33, 33, 33)
 
-    self:addRenderFunction(self.checkForCanvas)
+    self:addRenderFunction(self.checkForCanvas, true)
     self:addRenderFunction(self.updatePosition, true)
+
+    local func = bind(self.onVisualPropertyChange, self)
+    self:addPropertyListener("x", func, false)
+    self:addPropertyListener("y", func, false)
+    self:addPropertyListener("width", func, false)
+    self:addPropertyListener("height", func, false)
+    self:addPropertyListener("index", func, false)
+    self:addPropertyListener("children", func, false)
+    self:addPropertyListener("parent", func, false)
+    self:addPropertyListener("canvas", func, false)
 
     self.lastLogMs = 0
     self.logDelayMs = 3000
@@ -130,23 +144,44 @@ function Dx:log(...)
     self.lastLogMs = getTickCount()
 end
 
+function Dx:onVisualPropertyChange(property)
+    if (self.canvas) then
+        self.canvas:redraw()
+    end
+end
+
 function Dx:get(property)
     local class = getmetatable(self).__class
+
+    if (rawget(self, "propertyListeners")[property]) then
+        return (class.properties) and (class.properties[property]) or rawget(self, "properties")[property] or rawget(self, property)
+    end
+
     return class[property] or rawget(self, property)
 end
 
 function Dx:set(property, newValue)
-    if (rawget(self, "propertyListeners")[property]) then
-        local previousValue = rawget(self, property)
+    local func = rawget(self, "propertyListeners")[property]
 
-        if (previousValue ~= newValue) then
-            iprintd(
-                string.format("Property listener: %s", property),
-                string.format("Old: %s", previousValue),
-                string.format("New: %s", newValue)
-            )
-        --Core:getInstance():getEventManager():triggerEvent("onDxPropertyChange", self, property, previousValue, newValue)
+    if (func) then
+        local properties = rawget(self, "properties")
+        
+        rawset(self, property, nil)
+
+        if (properties[property] ~= newValue) then
+            properties[property] = newValue
+            rawset(self, "properties", properties)
+
+            if (self.name == "rect") then
+                iprintd(self.name, property, "updated")
+            end
+
+            if (type(func) == "function") then
+                func(property)
+            end
         end
+
+        return
     end
 
     rawset(self, property, newValue)
@@ -181,14 +216,10 @@ function Dx:setParent(parent)
     self.parent = parent
     parent:addChild(self)
 
-    self:updatePosition(true)
-    parent:doPropagate("onForceUpdatePosition", true)
-
     self:checkForCanvas()
 
-    if (self.canvas) then
-        self.canvas:redraw()
-    end
+    self:updatePosition(true)
+    parent:doPropagate("onForceUpdatePosition", true)
 
     return true
 end
@@ -238,10 +269,6 @@ function Dx:setIndex(index)
     end
 
     table.insert(self.parent.children, index, self)
-
-    if (self.canvas) then
-        self.canvas:redraw()
-    end
 
     self.parent:updateIndex(true)
 
@@ -373,7 +400,7 @@ function Dx:removeRenderFunction(func, preRender)
     return true
 end
 
-function Dx:addPropertyListener(property)
+function Dx:addPropertyListener(property, func, bindFunc)
     if (self.propertyListeners[property]) then
         return iprintd(
             "[addPropertyListener] Property listener already active",
@@ -381,8 +408,20 @@ function Dx:addPropertyListener(property)
         ) and false
     end
 
+    if (type(bindFunc) == "nil") then
+        bindFunc = true
+    end
+
     self.propertyListeners[property] = true
-    iprintd("[addPropertyListener] Added property listener", string.format("property: %s", property))
+
+    if (type(func) == "function") then
+        self.propertyListeners[property] = (bindFunc) and bind(func, self) or func
+    end
+
+    self.properties[property] = self[property]
+
+    self[property] = nil
+
     return true
 end
 
@@ -395,12 +434,11 @@ function Dx:removePropertyListener(property)
     end
 
     self.propertyListeners[property] = nil
-    iprintd("[removePropertyListener] Removed property listener", string.format("property: %s", property))
     return true
 end
 
 function Dx:getType()
-    return DX_TYPES[self.type] and "DX_" .. DX_TYPES[self.type] or false
+    return DxTypes[self.type] and "DX_" .. DxTypes[self.type] or false
 end
 
 function Dx:getEnumerableType()
@@ -491,11 +529,6 @@ function Dx:setPosition(x, y)
         (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
 
     self:doPropagate("onForceUpdatePosition", true)
-
-    if ((previousX ~= self.x) or (previousY ~= self.y)) and (self.canvas) then
-        self.canvas:redraw()
-    end
-
     return true
 end
 
@@ -559,7 +592,7 @@ end
 function Dx:checkForCanvas()
     local canvas = self:getCanvas()
 
-    if (not isDx(canvas)) then
+    if (not canvas) then
         return false
     end
 

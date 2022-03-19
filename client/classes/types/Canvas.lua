@@ -19,7 +19,7 @@ function Canvas:constructor(x, y, width, height, color)
 end
 
 function Canvas:pre_constructor()
-    self.minWidth, self.minHeight = 100, 100
+    
 end
 
 function Canvas:create()

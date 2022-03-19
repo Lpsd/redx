@@ -6,14 +6,14 @@ local testsEnabled = true
 local tests = {
     ["splitRectExample"] = true,
     ["splitRectExampleCanvas"] = true,
-    ["canvasExample"] = true
+    ["dragPropagationExample"] = true,
 }
 
 local funcs = {}
 
 function funcs.splitRectExample()
     -- Create a "main" parent rect, draggable as well as all children
-    local rect = Rect:new(350, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
+    local rect = Rect:new(50, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
     rect:setProperty("drag_children", true)
 
@@ -25,17 +25,19 @@ function funcs.splitRectExample()
     local rect4 = Rect:new(0, 0, 50, 50, tocolor(122, 122, 122), rect3, "rect4")
     rect4:setCentered(rect2)
 
-    -- Add an even smaller rect to the last one, and center it
+    -- Add an even smaller rect to the last one, center it & force in bounds
     local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
     rect5:setCentered()
+    rect5:setProperty("force_in_bounds", true)
 end
 
 function funcs.splitRectExampleCanvas()
     -- Create a "main" parent rect, draggable as well as all children
-    local rect = Rect:new(600, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
+    local rect = Rect:new(300, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
     rect:setProperty("drag_children", true)
 
+    -- Create a canvas to store the children
     local canvas = Canvas:new(0, 0, 200, 200, nil, rect, "canvas")
 
     -- Split main rect in half by 2 rects
@@ -46,19 +48,46 @@ function funcs.splitRectExampleCanvas()
     local rect4 = Rect:new(0, 0, 50, 50, tocolor(122, 122, 122), rect3, "rect4")
     rect4:setCentered(rect2)
 
-    -- Add an even smaller rect to the last one, and center it
+    -- Add an even smaller rect to the last one, center it & force in bounds
     local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
     rect5:setCentered()
+    rect5:setProperty("force_in_bounds", true)
 end
 
-function funcs.canvasExample()
-    -- Create the main canvas
-    local rect = Rect:new(850, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
+function funcs.dragPropagationExample()
+    -- Create a "main" parent rect, draggable as well as all children
+    local rect = Rect:new(550, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
     rect:setProperty("drag_children", true)
 
-    local canvas = Canvas:new(0, 0, 200, 200, nil, rect, "canvas")
-    local rect2 = Rect:new(50, 50, 50, 50, tocolor(66, 66, 66), canvas, "rect2")
+    -- Temporarily set properties globally
+    local oldValues = {
+        force_in_bounds = DxProperties.force_in_bounds,
+        click_propagate = DxProperties.click_propagate,
+        drag_propagate = DxProperties.drag_propagate
+    }
+
+    DxProperties.force_in_bounds = true
+    DxProperties.click_propagate = true
+    DxProperties.drag_propagate = true
+
+    -- Create some rectangles, children of each other, all centered
+    local rect2 = Rect:new(0, 0, 150, 150, tocolor(66, 66, 66), rect, "rect2")
+    rect2:setCentered()
+
+    local rect3 = Rect:new(0, 0, 100, 100, tocolor(99, 99, 99), rect2, "rect3")
+    rect3:setCentered()
+
+    local rect4 = Rect:new(0, 0, 50, 50, tocolor(122, 122, 122), rect3, "rect4")
+    rect4:setCentered()
+
+    local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
+    rect5:setCentered()
+
+    -- Reset properties
+    DxProperties.force_in_bounds = oldValues.force_in_bounds
+    DxProperties.click_propagate = oldValues.click_propagate
+    DxProperties.drag_propagate = oldValues.drag_propagate
 end
 
 function runTests()

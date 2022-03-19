@@ -40,33 +40,47 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     }
 
     self.click = {
-        actions = {
-            left = {
-                func = bind(self.onClickLeft, self),
-                state = false,
-                dragging = false,
-                propagated = false
+        left = {
+            func = bind(self.onClickLeft, self),
+            state = false,
+            dragging = false,
+            propagated = false,
+            pos = {
+                x = 0,
+                y = 0
             },
-            right = {
-                func = bind(self.onClickRight, self),
-                state = false,
-                dragging = false,
-                propagated = false
-            },
-            middle = {
-                func = bind(self.onClickMiddle, self),
-                state = false,
-                dragging = false,
-                propagated = false
+            offset = {
+                x = 0,
+                y = 0
             }
         },
-        pos = {
-            x = 0,
-            y = 0
+        right = {
+            func = bind(self.onClickRight, self),
+            state = false,
+            dragging = false,
+            propagated = false,
+            pos = {
+                x = 0,
+                y = 0
+            },
+            offset = {
+                x = 0,
+                y = 0
+            }
         },
-        offset = {
-            x = 0,
-            y = 0
+        middle = {
+            func = bind(self.onClickMiddle, self),
+            state = false,
+            dragging = false,
+            propagated = false,
+            pos = {
+                x = 0,
+                y = 0
+            },
+            offset = {
+                x = 0,
+                y = 0
+            }
         }
     }
 
@@ -83,7 +97,9 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     mt.__index = self.get
     setmetatable(self, mt)
 
-    self:pre_constructor()
+    if (self.pre_constructor) then
+        self:pre_constructor()
+    end
 
     self.x, self.y = tonumber(x) or 0, tonumber(y) or 0
     self.absoluteX, self.absoluteY = self.x, self.y
@@ -92,13 +108,26 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
 
     self.color = tonumber(color) or tocolor(33, 33, 33)
 
+    self:addRenderFunction(self.checkForCanvas)
     self:addRenderFunction(self.updatePosition, true)
+
+    self.lastLogMs = 0
+    self.logDelayMs = 3000
 
     DxInstances[#DxInstances + 1] = self
 
     if (parent) then
         self:setParent(parent)
     end
+end
+
+function Dx:log(...)
+    if (getTickCount() <= self.lastLogMs + self.logDelayMs) then
+        return false
+    end
+
+    iprintd(...)
+    self.lastLogMs = getTickCount()
 end
 
 function Dx:get(property)
@@ -123,6 +152,16 @@ function Dx:set(property, newValue)
     rawset(self, property, newValue)
 end
 
+function Dx:pre_draw(x, y)
+    x, y = tonumber(x) or self.absoluteX, tonumber(y) or self.absoluteY
+
+    if (type(self.draw) ~= "function") then
+        return false
+    end
+
+    self:draw(x, y)
+end
+
 function Dx:setParent(parent)
     if (self:isRootInstance()) then
         return false
@@ -141,9 +180,15 @@ function Dx:setParent(parent)
 
     self.parent = parent
     parent:addChild(self)
-    
+
     self:updatePosition(true)
     parent:doPropagate("onForceUpdatePosition", true)
+
+    self:checkForCanvas()
+
+    if (self.canvas) then
+        self.canvas:redraw()
+    end
 
     return true
 end
@@ -194,8 +239,8 @@ function Dx:setIndex(index)
 
     table.insert(self.parent.children, index, self)
 
-    if (self.parent == DxRootInstance) then
-        DxTopLevelInstances = self.parent.children
+    if (self.canvas) then
+        self.canvas:redraw()
     end
 
     self.parent:updateIndex(true)
@@ -255,11 +300,32 @@ function Dx:preRender()
     for func, data in pairs(self.renderFunctions.preRender) do
         func(unpack(data.args))
     end
+
+    for i = 1, #self.children do
+        self.children[i]:preRender()
+    end
 end
 
-function Dx:render()
+function Dx:render(originCanvas, x, y)
     for func, data in pairs(self.renderFunctions.render) do
         func(unpack(data.args))
+    end
+
+    local draw = (not self.canvas) or (self.canvas == originCanvas)
+
+    if (draw) then
+        local ancestorOffset = self:getAncestorOffset(originCanvas)
+        self:pre_draw(
+            (originCanvas and originCanvas ~= DxRootInstance) and (self.x + ancestorOffset.x) or self.absoluteX,
+            (originCanvas and originCanvas ~= DxRootInstance) and (self.y + ancestorOffset.y) or self.absoluteY
+        )
+    end
+
+    if (not originCanvas) or (self.canvas == originCanvas) then
+        for i = 1, #self.children do
+            local child = self.children[i]
+            self.children[i]:render(originCanvas)
+        end
     end
 end
 
@@ -357,18 +423,18 @@ function Dx:updatePosition(force)
     self.previousX, self.previousY = self.x, self.y
 
     local offset = {
-        x = self.click.offset.x,
-        y = self.click.offset.y
+        x = self.click.left.offset.x,
+        y = self.click.left.offset.y
     }
 
-    if (self.click.actions.left.dragging) then
+    if (self.click.left.dragging) then
         local cx, cy = getAbsoluteCursorPosition()
-        self.click.offset.x, self.click.offset.y = (self.click.pos.x - cx), (self.click.pos.y - cy)
+        self.click.left.offset.x, self.click.left.offset.y = (self.click.left.pos.x - cx), (self.click.left.pos.y - cy)
     end
 
     local pos = {
-        x = self.x + (offset.x - self.click.offset.x),
-        y = self.y + (offset.y - self.click.offset.y)
+        x = self.x + (offset.x - self.click.left.offset.x),
+        y = self.y + (offset.y - self.click.left.offset.y)
     }
 
     local force = self:getProperty("force_in_bounds")
@@ -377,11 +443,6 @@ function Dx:updatePosition(force)
     if (force == true or force_inherited == true) and (isDx(self.parent)) then
         local parentBounds = self.parent:getBounds()
         local bounds = (force_inherited) and self:getInheritedBounds() or self:getBounds()
-
-        local force = {
-            x = false,
-            y = false
-        }
 
         if (pos.x + bounds.min.x < parentBounds.min.x) then
             pos.x = (parentBounds.min.x - bounds.min.x)
@@ -407,6 +468,10 @@ function Dx:updatePosition(force)
 end
 
 function Dx:setPosition(x, y)
+    if (self:isRootInstance()) then
+        return false
+    end
+
     local pos = {
         x = tonumber(x) or 0,
         y = tonumber(y) or 0
@@ -416,8 +481,25 @@ function Dx:setPosition(x, y)
         return false
     end
 
+    local previousX, previousY = self.x, self.y
     self.x, self.y = (self.frozen.x) and self.x or pos.x, (self.frozen.y) and self.y or pos.y
 
+    local ancestorOffset = self:getAncestorOffset()
+
+    self.absoluteX, self.absoluteY =
+        (self.frozen.x) and self.absoluteX or (pos.x + ancestorOffset.x),
+        (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
+
+    self:doPropagate("onForceUpdatePosition", true)
+
+    if ((previousX ~= self.x) or (previousY ~= self.y)) and (self.canvas) then
+        self.canvas:redraw()
+    end
+
+    return true
+end
+
+function Dx:getAncestorOffset(stopAt)
     local ancestorOffset = {
         x = 0,
         y = 0
@@ -425,14 +507,13 @@ function Dx:setPosition(x, y)
 
     for i, ancestor in ipairs(self:getAncestors()) do
         ancestorOffset.x, ancestorOffset.y = ancestorOffset.x + ancestor.x, ancestorOffset.y + ancestor.y
+
+        if (stopAt == ancestor) then
+            break
+        end
     end
 
-    self.absoluteX, self.absoluteY =
-        (self.frozen.x) and self.absoluteX or (pos.x + ancestorOffset.x),
-        (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
-    self:doPropagate("onForceUpdatePosition", true)
-
-    return true
+    return ancestorOffset
 end
 
 function Dx:getAncestors(tbl)
@@ -462,10 +543,33 @@ function Dx:isAncestor(ancestor)
     return false
 end
 
+function Dx:getCanvas()
+    local ancestors = self:getAncestors()
+
+    for i = 1, #ancestors do
+        local ancestor = ancestors[i]
+        if (ancestor.type == DX_CANVAS) then
+            return ancestor
+        end
+    end
+
+    return false
+end
+
+function Dx:checkForCanvas()
+    local canvas = self:getCanvas()
+
+    if (not isDx(canvas)) then
+        return false
+    end
+
+    self.canvas = canvas
+end
+
 function Dx:onClick(button, state, propagated, propagatedInstance)
-    self.click.actions[button].state = state
-    self.click.actions[button].propagated = propagated
-    self.click.actions[button].func(state)
+    self.click[button].state = state
+    self.click[button].propagated = propagated
+    self.click[button].func(state)
 
     local ancestorDragEnabled = false
 
@@ -476,14 +580,17 @@ function Dx:onClick(button, state, propagated, propagatedInstance)
         end
     end
 
-    if (not self:isRootInstance()) and (ancestorDragEnabled or (self:getProperty("drag") == true)) then
+    if
+        (not self:isRootInstance() and self.type ~= DX_CANVAS) and
+            (ancestorDragEnabled or (self:getProperty("drag") == true))
+     then
         if (not propagated) or (propagatedInstance:getProperty("drag_propagate") == true) then
-            self.click.actions[button].dragging = state
+            self.click[button].dragging = state
         end
     end
 
-    self.click.pos.x, self.click.pos.y = getAbsoluteCursorPosition()
-    self.click.offset.x, self.click.offset.y = 0, 0
+    self.click[button].pos.x, self.click[button].pos.y = getAbsoluteCursorPosition()
+    self.click[button].offset.x, self.click[button].offset.y = 0, 0
 end
 
 function Dx:onClickLeft(state)
@@ -509,11 +616,11 @@ function Dx:onClickMiddle(state)
 end
 
 function Dx:onMouseUp(button)
-    if (not self.click.actions[button]) then
+    if (not self.click[button]) then
         return false
     end
 
-    self.click.actions[button].dragging = false
+    self.click[button].dragging = false
 end
 
 function Dx:sendToBack()
@@ -627,14 +734,14 @@ function Dx:getProperty(name)
 end
 
 function Dx:isClicked()
-    return (self.click.actions.left.state) or (self.click.actions.right.state) or (self.click.actions.middle.state)
+    return (self.click.left.state) or (self.click.right.state) or (self.click.middle.state)
 end
 
 function Dx:getClicked()
     return {
-        left = self.click.actions.left.state,
-        right = self.click.actions.right.state,
-        middle = self.click.actions.middle.state
+        left = self.click.left.state,
+        right = self.click.right.state,
+        middle = self.click.middle.state
     }
 end
 

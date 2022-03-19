@@ -1,12 +1,19 @@
 -- Author: Lpsd (https://github.com/Lpsd/redx)
 -- See the LICENSE file @ root directory
 
+DxCore = false
 DxRootInstance = false
 
 DxInstances = {}
-DxTopLevelInstances = {}
 
 DxProperties = {}
+
+DxTypes = {}
+DxTypeClasses = {
+    ["BASE"] = "Dx",
+    ["RECT"] = "Rect",
+    ["CANVAS"] = "Canvas"
+}
 
 local function handleClick(button, state)
     state = (state == "down")
@@ -137,53 +144,32 @@ function getHoveredInstance(dx, propagated)
     return false
 end
 
-local function dxTest()
-    -- Create a "main" parent rect
-    local rect = Rect:new(500, 500, 200, 200, tocolor(33, 33, 33), false, "a")
-    rect:setProperty("drag", true)
-
-    -- Split main rect in half by 2 rects
-    local rect2 = Rect:new(0, 0, 100, 200, tocolor(66, 66, 66), rect, "b")
-    local rect3 = Rect:new(100, 0, 100, 200, tocolor(99, 99, 99), rect, "c")
-
-    -- Add smaller rect as parent of right half, but set to center of left half
-    local rect4 = Rect:new(0, 0, 50, 50, tocolor(122, 122, 122), rect3, "d")
-    rect4:setCentered(rect2)
-end
-
 local function preRender(dx)
     dx = isDx(dx) and dx or DxRootInstance
-
     dx:preRender()
-
-    for i = #dx.children, 1, -1 do
-        preRender(dx.children[i])
-    end
 
     return true
 end
 
 local function render(dx)
     dx = isDx(dx) and dx or DxRootInstance
-
     dx:render()
-
-    for i, child in ipairs(dx.children) do
-        render(child)
-    end
 
     return true
 end
 
 local function init()
     SCREEN_WIDTH, SCREEN_HEIGHT = guiGetScreenSize()
-    DX_TYPES = getIndexes(DX_TYPES_CLASSES)
-    enum(DX_TYPES, "DX")
+
+    DxTypes = getIndexes(DxTypeClasses)
+    enum(DxTypes, "DX")
+
+    Autoloader.loadClasses()
 
     loadDefaultProperties()
 
     -- Create the root UI element
-    DxRootInstance = Rect:new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, tocolor(0, 0, 0, 0), false, "root")
+    DxRootInstance = Canvas:new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, tocolor(0, 0, 0, 0), false, "root")
 
     addEventHandler("onClientClick", root, handleClick)
     
@@ -198,6 +184,22 @@ local function init()
         end
     )
 
-    dxTest()
+    addCommandHandler(
+        "dxruncode",
+        function(cmd, ...)
+            local rawcode = table.concat({...}, " ")
+
+            local run = loadstring(rawcode)
+
+            if (type(run) ~= "function") then
+                return false
+            end
+
+            local out = run()
+            iprintd("[dxruncode] returned:", out)
+        end
+    )
+
+    runTests()
 end
 addEventHandler("onClientResourceStart", resourceRoot, init)

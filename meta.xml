@@ -20,10 +20,11 @@
 
     <!-- Client -->
     <script src="client/utils.lua" type="client" />
+    <script src="client/tests.lua" type="client" />
     <script src="client/main.lua" type="client" />
         <!-- Classes -->
-        <script src="client/classes/Core.lua" type="client" />
             <!-- Types -->
             <script src="client/classes/types/Dx.lua" type="client" />
             <script src="client/classes/types/Rect.lua" type="client" />
+            <script src="client/classes/types/Canvas.lua" type="client" />
 </meta>

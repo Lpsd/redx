@@ -5,6 +5,20 @@ function isDx(dx)
     return instanceof(dx, Dx) or instanceof(dx, Dx, true)
 end
 
+function getDxByName(name)
+    local t = {}
+
+    for i = 1, #DxInstances do
+        local dx = DxInstances[i]
+
+        if (dx.name == name) then
+            t[#t+1] = dx
+        end
+    end
+
+    return t
+ end
+
 function getAbsoluteCursorPosition()
     if (not isCursorShowing()) then
         return 0, 0

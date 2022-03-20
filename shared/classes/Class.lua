@@ -17,6 +17,10 @@ function Class:delete(...)
     return delete(self, ...)
 end
 
+function Class:isDestroyed()
+    return self.__destroyed
+end
+
 -- *******************************************************************
 
 function Class:virtual_constructor()

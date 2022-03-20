@@ -8,7 +8,6 @@ function Rect:constructor(x, y, width, height, color)
 end
 
 function Rect:pre_constructor()
-    
 end
 
 function Rect:draw(x, y)

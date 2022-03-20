@@ -100,6 +100,16 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
 
     self.properties = deepcopy(DxProperties)
 
+    self.animations = {}
+    self.animationAffectors = {
+        ["x"] = { 
+            {self.updatePosition, true} 
+        },
+        ["y"] = { 
+            {self.updatePosition, true} 
+        }
+    }
+
     if (self.pre_constructor) then
         self:pre_constructor()
     end
@@ -112,8 +122,9 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         tonumber(width) and math.max(self.minHeight, height) or self.minHeight
 
     self.color = tonumber(color) or tocolor(33, 33, 33)
-    
+
     self:addRenderFunction(self.updatePosition, true)
+    self:addRenderFunction(self.processAnimations)
 
     local func = bind(self.onVisualPropertyChange, self)
     self:addPropertyListener("x", func, false)
@@ -140,6 +151,71 @@ function Dx:log(...)
 
     iprintd(...)
     self.lastLogMs = getTickCount()
+end
+
+function Dx:addAnimation(animation, start)
+    if (not animation) or (not instanceof(animation, Animation, true)) then
+        return false
+    end
+
+    if (type(start) ~= "boolean") then
+        start = true
+    end
+
+    self.animations[#self.animations+1] = animation
+    animation:start()
+
+    return true
+end
+
+function Dx:removeAnimation(animation)
+    if (not animation) or (not instanceof(animation, Animation, true)) then
+        return false
+    end
+    
+    for i = 1, #self.animations do
+        local anim = self.animations[i]
+
+        if (anim == animation) then
+            table.remove(self.animations, i)
+            return true
+        end
+    end
+
+    return false
+end
+
+function Dx:processAnimations()
+    local destroy = {}
+
+    for i = 1, #self.animations do
+        local animation = self.animations[i]
+
+        if (animation:isDestroyed()) then
+            destroy[#destroy+1] = i
+        else
+            if (animation.state) and (not animation.finished) then
+                animation:run()
+                self[animation.property] = animation.i
+
+                local affectors = self.animationAffectors[animation.property]
+
+                if (affectors) then
+                    for j = 1, #affectors do
+                        local args = deepcopy(affectors[j])
+                        local func = args[1]
+                        
+                        table.remove(args, 1)
+                        func(self, unpack(args))
+                    end
+                end
+            end
+        end
+    end
+
+    for i = #destroy, 1, -1 do
+        table.remove(self.animations, i)
+    end
 end
 
 function Dx:onVisualPropertyChange(property)
@@ -315,7 +391,7 @@ function Dx:isTopLevel()
 end
 
 function Dx:isRootInstance()
-    return (not DxRootInstance) or (self == DxRootInstance)
+    return (self == DxRootInstance)
 end
 
 function Dx:preRender()
@@ -531,9 +607,7 @@ function Dx:setPosition(x, y, updateAbsolute)
 
         local ancestorOffset = self:getAncestorOffset()
 
-        self.absoluteX, self.absoluteY =
-            (self.frozen.x) and self.absoluteX or (pos.x + ancestorOffset.x),
-            (self.frozen.y) and self.absoluteY or (pos.y + ancestorOffset.y)
+        self.absoluteX, self.absoluteY = (pos.x + ancestorOffset.x), (pos.y + ancestorOffset.y)
 
         self:doPropagate("onForceUpdatePosition", true)
     end
@@ -598,6 +672,10 @@ function Dx:getCanvas()
     return false
 end
 
+function Dx:inCanvas()
+    return self.canvas and true or false
+end
+
 function Dx:checkForCanvas()
     local canvas = self:getCanvas()
 
@@ -622,12 +700,11 @@ function Dx:onClick(button, state, propagated, propagatedInstance)
         end
     end
 
-    if
-        (not self:isRootInstance() and self.type ~= DX_CANVAS) and
-            (ancestorDragEnabled or (self:getProperty("drag") == true))
-     then
-        if (not propagated) or (propagatedInstance:getProperty("drag_propagate") == true) then
-            self.click[button].dragging = state
+    if (not self:isRootInstance() and self.type ~= DX_CANVAS) then
+        if (self:getProperty("drag")) or (ancestorDragEnabled) then
+            if (not propagated) or (propagatedInstance:getProperty("drag_propagate") == true) then
+                self.click[button].dragging = state
+            end
         end
     end
 

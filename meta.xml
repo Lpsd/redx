@@ -23,6 +23,7 @@
     <script src="client/tests.lua" type="client" />
     <script src="client/main.lua" type="client" />
         <!-- Classes -->
+            <script src="client/classes/Animation.lua" type="client" />
             <!-- Types -->
             <script src="client/classes/types/Dx.lua" type="client" />
             <script src="client/classes/types/Rect.lua" type="client" />

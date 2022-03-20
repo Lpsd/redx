@@ -19,7 +19,6 @@ function Canvas:constructor(x, y, width, height, color)
 end
 
 function Canvas:pre_constructor()
-    
 end
 
 function Canvas:create()

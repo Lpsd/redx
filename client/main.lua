@@ -118,15 +118,34 @@ function getHoveredInstance(dx, propagated)
                 local next, prop = getHoveredInstance(child, propagated)
 
                 local hovering_child = isMouseInPosition(child.absoluteX, child.absoluteY, child.width, child.height)
-                local hovering_next = next and isMouseInPosition(next.absoluteX, next.absoluteY, next.width, next.height) or false
+                local hovering_next =
+                    next and isMouseInPosition(next.absoluteX, next.absoluteY, next.width, next.height) or false
 
-                if (hovering_next) then
+                if
+                    (hovering_next) and
+                        ((not next.canvas) or
+                            (isMouseInPosition(
+                                next.canvas.absoluteX,
+                                next.canvas.absoluteY,
+                                next.canvas.width,
+                                next.canvas.height
+                            )))
+                 then
                     if (hovering_this) then
                         propagated[#propagated + 1] = dx
                     end
 
                     return next, propagated
-                elseif (hovering_child) then
+                elseif
+                    (hovering_child) and
+                        ((not child.canvas) or
+                            (isMouseInPosition(
+                                child.canvas.absoluteX,
+                                child.canvas.absoluteY,
+                                child.canvas.width,
+                                child.canvas.height
+                            )))
+                 then
                     if (hovering_this) then
                         propagated[#propagated + 1] = dx
                     end
@@ -172,7 +191,7 @@ local function init()
     DxRootInstance = Canvas:new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, tocolor(0, 0, 0, 0), false, "root")
 
     addEventHandler("onClientClick", root, handleClick)
-    
+
     addEventHandler("onClientPreRender", root, preRender)
     addEventHandler("onClientRender", root, render)
 

@@ -7,6 +7,7 @@ local tests = {
     ["splitRectExample"] = true,
     ["splitRectExampleCanvas"] = true,
     ["dragPropagationExample"] = true,
+    ["animationLoopExample"] = true
 }
 
 local funcs = {}
@@ -84,10 +85,37 @@ function funcs.dragPropagationExample()
     local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
     rect5:setCentered()
 
+    -- Freeze the final rectangle in the center of its parent (dragging will not affect position)
+    rect5:setFrozen("x", true)
+    rect5:setFrozen("y", true)
+
     -- Reset properties
     DxProperties.force_in_bounds = oldValues.force_in_bounds
     DxProperties.click_propagate = oldValues.click_propagate
     DxProperties.drag_propagate = oldValues.drag_propagate
+end
+
+function funcs.animationLoopExample()
+    -- Create a "main" parent rect
+    local rect = Rect:new(800, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
+    rect:setProperty("drag", true)
+
+    -- Create a small rectangle to animate inside the main rect
+    local rect2 = Rect:new(0, 0, 50, 50, tocolor(66, 66, 66), rect, "rect2")
+
+    -- Create our animations (set as looped)
+    local animX = Animation:new("x", 0, 150, 1000, "InQuad", true)
+    local animY = Animation:new("y", 0, 150, 1000, "OutQuad", true)
+
+    -- Toggle them every second, creating a delay before the animations loop
+    setTimer(function()
+        animX:toggle()
+        animY:toggle()
+    end, 1000, 0)
+
+    -- Add them to rect2, starting automatically
+    rect2:addAnimation(animX, true)
+    rect2:addAnimation(animY, true)
 end
 
 function runTests()

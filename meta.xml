@@ -24,8 +24,13 @@
     <script src="client/main.lua" type="client" />
         <!-- Classes -->
             <script src="client/classes/Animation.lua" type="client" />
+
             <!-- Types -->
+                <!-- Extends -->
+                <script src="client/classes/types/extends/Text.lua" type="client" />
             <script src="client/classes/types/Dx.lua" type="client" />
             <script src="client/classes/types/Rect.lua" type="client" />
             <script src="client/classes/types/Canvas.lua" type="client" />
+            <script src="client/classes/types/Button.lua" type="client" />
+
 </meta>

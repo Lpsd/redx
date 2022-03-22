@@ -25,14 +25,30 @@ local easingTypes = {
     ["CosineCurve"] = true
 }
 
-function Animation:constructor(property, from, to, duration, easing, loop, onComplete)
+function Animation:constructor(property, from, to, duration, easing, loop, onRender, onComplete)
     self.property = (type(property) == "string" and property ~= "") and property or false
-    self.from = tonumber(from)
-    self.to = tonumber(to)
+    self.from = (type(from) == "table") and from or {tonumber(from)}
+    self.to = (type(to) == "table") and to or {tonumber(to)}
 
-    if (not self.property) or (not self.from) or (not self.to) then
+    if (not self.property) or (#self.from ~= #self.to) then
         return self:delete()
     end
+
+    for i = 1, #self.from do
+        self.from[i] = tonumber(self.from[i])
+
+        if (not self.from[i]) then
+            return self:delete()
+        end
+    end
+
+    for i = 1, #self.to do
+        self.to[i] = tonumber(self.to[i])
+
+        if (not self.to[i]) then
+            return self:delete()
+        end
+    end   
 
     if (type(loop) ~= "boolean") then
         loop = false
@@ -45,11 +61,13 @@ function Animation:constructor(property, from, to, duration, easing, loop, onCom
     self.startMs = 0
 
     self.finished = false
+
     self.loop = loop
 
+    self.onRender = (type(onRender) == "function") and onRender or false
     self.onComplete = (type(onComplete) == "function") and onComplete or false
 
-    self.i = 0
+    self.i = {}
     self.runs = 0
 end
 
@@ -72,20 +90,23 @@ end
 
 function Animation:toggle()
     self.state = (not self.state)
+    self.startMs = getTickCount()
 end
 
 function Animation:run()
 	local elapsed = (getTickCount() - self.startMs)
 	local progress = (elapsed / self.duration)
 
-    self.i = interpolateBetween(self.from, 0, 0, self.to, 0, 0, progress, self.easing)
+    for index, i in ipairs(self.from) do
+        self.i[index] = interpolateBetween(i, 0, 0, self.to[index], 0, 0, progress, "Linear")
+    end
 
     if (getTickCount() >= self.startMs + self.duration) then
         self.runs = self.runs + 1
 
         if (self.loop) then
             if (type(self.loop) == "number") and (self.runs < self.loop) then
-                return self:start()
+                self:start()
             end
 
             if (type(self.loop) == "boolean") then

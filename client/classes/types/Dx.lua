@@ -46,6 +46,9 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         preRender = {}
     }
 
+    self.bounds = {}
+    self.inheritedBounds = {}
+
     self.minWidth, self.minHeight = 0, 0
 
     self.click = {
@@ -102,11 +105,11 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
 
     self.animations = {}
     self.animationAffectors = {
-        ["x"] = { 
-            {self.updatePosition, true} 
+        ["x"] = {
+            {self.updatePosition, true}
         },
-        ["y"] = { 
-            {self.updatePosition, true} 
+        ["y"] = {
+            {self.updatePosition, true}
         }
     }
 
@@ -131,6 +134,7 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     self:addPropertyListener("y", func, false)
     self:addPropertyListener("width", func, false)
     self:addPropertyListener("height", func, false)
+    self:addPropertyListener("color", func, false)
     self:addPropertyListener("index", func, false)
     self:addPropertyListener("canvas", func, false)
 
@@ -162,8 +166,11 @@ function Dx:addAnimation(animation, start)
         start = true
     end
 
-    self.animations[#self.animations+1] = animation
-    animation:start()
+    self.animations[#self.animations + 1] = animation
+
+    if (start) then
+        animation:start()
+    end
 
     return true
 end
@@ -172,7 +179,7 @@ function Dx:removeAnimation(animation)
     if (not animation) or (not instanceof(animation, Animation, true)) then
         return false
     end
-    
+
     for i = 1, #self.animations do
         local anim = self.animations[i]
 
@@ -192,21 +199,28 @@ function Dx:processAnimations()
         local animation = self.animations[i]
 
         if (animation:isDestroyed()) then
-            destroy[#destroy+1] = i
+            destroy[#destroy + 1] = i
         else
             if (animation.state) and (not animation.finished) then
                 animation:run()
-                self[animation.property] = animation.i
+                
+                if (animation.onRender) then
+                    animation.onRender(self, animation.i)
+                end
 
-                local affectors = self.animationAffectors[animation.property]
+                if (#animation.i == 1) then
+                    self[animation.property] = animation.i[1]
 
-                if (affectors) then
-                    for j = 1, #affectors do
-                        local args = deepcopy(affectors[j])
-                        local func = args[1]
-                        
-                        table.remove(args, 1)
-                        func(self, unpack(args))
+                    local affectors = self.animationAffectors[animation.property]
+
+                    if (affectors) then
+                        for j = 1, #affectors do
+                            local args = deepcopy(affectors[j])
+                            local func = args[1]
+
+                            table.remove(args, 1)
+                            func(self, unpack(args))
+                        end
                     end
                 end
             end
@@ -290,7 +304,7 @@ function Dx:setParent(parent)
     self:checkForCanvas()
 
     self:updatePosition(true)
-    parent:doPropagate("onForceUpdatePosition", true)
+    self:getTopLevelParent():doPropagate("onForceUpdatePosition", true)
 
     return true
 end
@@ -528,9 +542,11 @@ function Dx:getPosition(absolute)
     return self.absoluteX, self.absoluteY
 end
 
-function Dx:updatePosition(updateAbsolute)
-    self.previousX, self.previousY = self.x, self.y
+function Dx:getTopLevelParent()
+    return (self.parent == DxRootInstance) and self or self.parent:getTopLevelParent()
+end
 
+function Dx:updatePosition(forceUpdate)
     local offset = {
         x = self.click.left.offset.x,
         y = self.click.left.offset.y
@@ -549,7 +565,11 @@ function Dx:updatePosition(updateAbsolute)
     local force = self:getProperty("force_in_bounds")
     local force_inherited = self:getProperty("force_in_bounds_inherited")
 
-    if (force == true or force_inherited == true) and (isDx(self.parent)) then
+    if
+        (self.previousX ~= (frozen and self.previousX or pos.x) or
+            self.previousY ~= (frozen and self.previousY or pos.y)) and
+            (force == true or force_inherited == true) and (isDx(self.parent))
+     then
         local parentBounds = self.parent:getBounds()
         local bounds = (force_inherited) and self:getInheritedBounds() or self:getBounds()
 
@@ -570,18 +590,20 @@ function Dx:updatePosition(updateAbsolute)
         end
     end
 
-    if ((self.x ~= pos.x) or (self.y ~= pos.y)) or (updateAbsolute) then
-        self:setPosition(pos.x, pos.y, updateAbsolute)
+    self.previousX, self.previousY = self.x, self.y
+
+    if ((self.x ~= pos.x) or (self.y ~= pos.y)) or (forceUpdate) then
+        self:setPosition(pos.x, pos.y, forceUpdate)
     end
 end
 
-function Dx:setPosition(x, y, updateAbsolute)
+function Dx:setPosition(x, y, forceUpdate)
     if (self:isRootInstance()) then
         return false
     end
 
-    if (type(updateAbsolute) == "nil") then
-        updateAbsolute = false
+    if (type(forceUpdate) ~= "boolean") then
+        forceUpdate = false
     end
 
     local pos = {
@@ -596,7 +618,7 @@ function Dx:setPosition(x, y, updateAbsolute)
     local previousX, previousY = self.x, self.y
     local newX, newY = (self.frozen.x) and self.x or pos.x, (self.frozen.y) and self.y or pos.y
 
-    if (newX ~= previousX) or (newY ~= previousY) or (updateAbsolute) then
+    if (newX ~= previousX) or (newY ~= previousY) or (forceUpdate) then
         if (newX ~= previousX) then
             self.x = newX
         end
@@ -606,8 +628,10 @@ function Dx:setPosition(x, y, updateAbsolute)
         end
 
         local ancestorOffset = self:getAncestorOffset()
-
         self.absoluteX, self.absoluteY = (pos.x + ancestorOffset.x), (pos.y + ancestorOffset.y)
+
+        self:updateBounds()
+        self:updateInheritedBounds()
 
         self:doPropagate("onForceUpdatePosition", true)
     end
@@ -754,9 +778,19 @@ function Dx:bringToFront()
     self:setIndex(#self.parent.children)
 end
 
-function Dx:getBounds(absolute)
+function Dx:getBounds(absolute, lookup)
     if (type(absolute) ~= "boolean") then
         absolute = false
+    end
+
+    if (type(lookup) ~= "boolean") then
+        lookup = false
+    end
+
+    local tag = (absolute and "absolute" or "relative")
+
+    if (not lookup) and (self.bounds[tag]) then
+        return self.bounds[tag]
     end
 
     return {
@@ -771,7 +805,17 @@ function Dx:getBounds(absolute)
     }
 end
 
-function Dx:getInheritedBounds(absolute)
+function Dx:getInheritedBounds(absolute, lookup)
+    if (type(lookup) ~= "boolean") then
+        lookup = false
+    end
+
+    local tag = (absolute and "absolute" or "relative")
+
+    if (not lookup) and (self.inheritedBounds[tag]) then
+        return self.inheritedBounds[tag]
+    end
+
     local bounds = self:getBounds(absolute)
 
     for i, child in ipairs(self:getChildren(true)) do
@@ -799,6 +843,16 @@ function Dx:getInheritedBounds(absolute)
     end
 
     return bounds
+end
+
+function Dx:updateBounds()
+    self.bounds.absolute = self:getBounds(true, true)
+    self.bounds.relative = self:getBounds(false, true)
+end
+
+function Dx:updateInheritedBounds()
+    self.inheritedBounds.absolute = self:getInheritedBounds(true, true)
+    self.inheritedBounds.relative = self:getInheritedBounds(false, true)
 end
 
 function Dx:getChildren(inherited)

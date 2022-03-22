@@ -34,7 +34,7 @@ function Canvas:redraw()
 end
 
 function Canvas:redrawQueued()
-    if (not self.redrawNextFrame) or (not isElement(self.renderTarget)) then
+    if (not self.redrawNextFrame) or (not self.renderTarget) then
         return false
     end
 

@@ -12,6 +12,7 @@ DxTypes = {}
 DxTypeClasses = {
     ["BASE"] = "Dx",
     ["RECT"] = "Rect",
+    ["BUTTON"] = "Button",
     ["CANVAS"] = "Canvas"
 }
 

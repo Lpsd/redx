@@ -7,7 +7,8 @@ local tests = {
     ["splitRectExample"] = true,
     ["splitRectExampleCanvas"] = true,
     ["dragPropagationExample"] = true,
-    ["animationLoopExample"] = true
+    ["animationLoopExample"] = true,
+    ["buttonExample"] = true,
 }
 
 local funcs = {}
@@ -103,19 +104,40 @@ function funcs.animationLoopExample()
     -- Create a small rectangle to animate inside the main rect
     local rect2 = Rect:new(0, 0, 50, 50, tocolor(66, 66, 66), rect, "rect2")
 
-    -- Create our animations (set as looped)
+    -- Create our position animations (set as looped)
     local animX = Animation:new("x", 0, 150, 1000, "InQuad", true)
     local animY = Animation:new("y", 0, 150, 1000, "OutQuad", true)
 
-    -- Toggle them every second, creating a delay before the animations loop
+    -- Create some color animations (also looped) with a custom function to update color on any instance it is attached to
+    -- Note: animations only support automatically updating properties which consist of a single number value (e.g x, y, width, height)
+    -- We need to interpolate r, g and b here, so pass a table of numbers to interpolate and manually update the color value.
+    local animColorRedToBlue = Animation:new("color", {255, 0, 0}, {0, 0, 255}, 1000, "InOutBounce", true, function(dxInstance, interpolated)
+        dxInstance.color = tocolor(interpolated[1], interpolated[2], interpolated[3])
+    end)
+
+    local animColorBlueToRed = Animation:new("color", {0, 0, 255}, {255, 0, 0}, 1000, "InOutBounce", true, function(dxInstance, interpolated)
+        dxInstance.color = tocolor(interpolated[1], interpolated[2], interpolated[3])
+    end)
+
+    -- Toggle all animations every second, creating a delay between them
     setTimer(function()
         animX:toggle()
         animY:toggle()
+        animColorRedToBlue:toggle()
+        animColorBlueToRed:toggle()
     end, 1000, 0)
 
-    -- Add them to rect2, starting automatically
+    -- Add position animations to rect2, starting automatically
     rect2:addAnimation(animX, true)
     rect2:addAnimation(animY, true)
+
+    -- Add our color animations, one starting automatically, the other paused (until toggled by the timer above)
+    rect2:addAnimation(animColorRedToBlue, true)
+    rect2:addAnimation(animColorBlueToRed, false)
+end
+
+function funcs.buttonExample()
+    local button = Button:new(50, 300, 200, 75, tocolor(66, 66, 66), false, "button")
 end
 
 function runTests()

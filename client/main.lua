@@ -3,10 +3,19 @@
 
 DxCore = false
 DxRootInstance = false
+DxHoveredInstance = false
 
 DxInstances = {}
 
 DxProperties = {}
+DxStyles = {}
+
+DxStates = {
+    "normal",
+    "hovered",
+    "selected",
+    "disabled"
+}
 
 DxTypes = {}
 DxTypeClasses = {
@@ -16,84 +25,7 @@ DxTypeClasses = {
     ["CANVAS"] = "Canvas"
 }
 
-local function handleClick(button, state)
-    state = (state == "down")
-    local instance, propagated = getHoveredInstance()
-
-    local ancestorClickEnabled = true
-
-    for i, ancestor in ipairs(instance:getAncestors()) do
-        if (ancestor:getProperty("click_children") == false) then
-            ancestorClickEnabled = false
-            break
-        end
-    end
-
-    if (isDx(instance)) and (ancestorClickEnabled) and (instance:getProperty("click") == true) then
-        instance:onClick(button, state, false)
-
-        if (instance:getProperty("click_propagate") == true) then
-            for i, prop in ipairs(propagated) do
-                if (isDx(prop)) then
-                    prop:onClick(button, state, true, instance)
-                end
-            end
-        end
-    end
-
-    if (not state) then
-        for i, inst in ipairs(DxInstances) do
-            if (inst:isClicked()) then
-                inst:onMouseUp(button)
-            end
-        end
-    end
-end
-
-local function loadPropertiesFromFile(path)
-    local propertiesFile = fileOpen(path or "default.properties")
-
-    if (propertiesFile) then
-        local size = fileGetSize(propertiesFile)
-        local jsonData = fileRead(propertiesFile, size)
-
-        DxProperties = fromJSON(jsonData)
-
-        fileClose(propertiesFile)
-        iprintd("Loaded default properties", path)
-        return DxProperties
-    end
-
-    iprintd("Failed to load default properties", path)
-    return false
-end
-
-local function loadDefaultProperties(path)
-    return loadPropertiesFromFile((type(path) == "string") and path or "default.properties")
-end
-
-local function getDefaultProperties()
-    return DxProperties or loadDefaultProperties() or iprintd("Problem getting default properties")
-end
-
-function setDefaultProperty(name, value)
-    if (type(name) ~= "string") then
-        return false
-    end
-
-    if (DxProperties[name]) and (type(val) ~= type(DxProperties[name])) then
-        return false
-    end
-
-    DxProperties[name] = val
-    return true
-end
-
-function getDefaultProperty(name)
-    return DxProperties[name]
-end
-
-function getHoveredInstance(dx, propagated)
+local function getHoveredInstance(dx, propagated)
     dx = isDx(dx) and dx or DxRootInstance
     propagated = (type(propagated) == "table") and propagated or {}
 
@@ -164,6 +96,52 @@ function getHoveredInstance(dx, propagated)
     return false
 end
 
+local function handleClick(button, state)
+    state = (state == "down")
+    local instance, propagated = getHoveredInstance()
+
+    local ancestorClickEnabled = true
+
+    for i, ancestor in ipairs(instance:getAncestors()) do
+        if (ancestor:getProperty("click_children") == false) then
+            ancestorClickEnabled = false
+            break
+        end
+    end
+
+    if (isDx(instance)) and (ancestorClickEnabled) and (instance:getProperty("click") == true) then
+        instance:onClick(button, state, false)
+
+        if (instance:getProperty("click_propagate") == true) then
+            for i, prop in ipairs(propagated) do
+                if (isDx(prop)) then
+                    prop:onClick(button, state, true, instance)
+                end
+            end
+        end
+    end
+
+    if (not state) then
+        for i, inst in ipairs(DxInstances) do
+            if (inst:isClicked()) then
+                inst:onMouseUp(button)
+            end
+        end
+    end
+end
+
+local function handleCursorMove()
+    DxHoveredInstance = getHoveredInstance()
+
+    for i, instance in ipairs(DxInstances) do
+        if (instance:getState() == "hovered") and (instance ~= DxHoveredInstance) then
+            instance:onMouseLeave()
+        elseif (instance:getState() ~= "hovered" and instance:getState() ~= "selected") and (instance == DxHoveredInstance) then
+            instance:onMouseEnter()
+        end
+    end
+end
+
 local function preRender(dx)
     dx = isDx(dx) and dx or DxRootInstance
     dx:preRender()
@@ -184,14 +162,58 @@ local function init()
     DxTypes = getIndexes(DxTypeClasses)
     enum(DxTypes, "DX")
 
+    local states = deepcopy(DxStates)
+
+    for i, state in ipairs(states) do
+        states[i] = state:upper()
+    end
+
+    enum(states, "STATE")
+
     Autoloader.loadClasses()
 
-    loadDefaultProperties()
+    DxProperties.default = loadClassProperties("default")
+    DxStyles.default = loadClassStyles("default")
+
+    -- Load individual class properties and styles
+    for i, t in pairs(DxTypeClasses) do
+        local properties = loadClassProperties(t)
+        local styles = loadClassStyles(t)
+
+        if (properties) then
+            DxProperties[t] = properties
+
+            for prop, value in pairs(DxProperties.default) do
+                if (type(DxProperties[t][prop]) == "nil") then
+                    DxProperties[t][prop] = value
+                end
+            end
+        else
+            DxProperties[t] = deepcopy(DxProperties.default)
+        end
+
+        if (styles) then
+            DxStyles[t] = styles
+
+            for styleType, data in pairs(DxStyles.default) do
+                if (type(DxStyles[t][styleType]) == "nil") then
+                    DxStyles[t][styleType] = data
+                else
+                    for style, value in pairs(data) do
+                        if (type(DxStyles[t][styleType][style]) == "nil") then
+                            DxStyles[t][styleType][style] = value
+                        end
+                    end
+                end
+            end
+        end
+    end
 
     -- Create the root UI element
     DxRootInstance = Canvas:new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, tocolor(0, 0, 0, 0), false, "root")
 
     addEventHandler("onClientClick", root, handleClick)
+    addEventHandler("onClientCursorMove", root, handleCursorMove)
 
     addEventHandler("onClientPreRender", root, preRender)
     addEventHandler("onClientRender", root, render)

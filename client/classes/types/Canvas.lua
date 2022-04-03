@@ -19,6 +19,7 @@ function Canvas:constructor(x, y, width, height, color)
 end
 
 function Canvas:pre_constructor()
+    self.type = DX_CANVAS
 end
 
 function Canvas:create()

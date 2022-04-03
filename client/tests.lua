@@ -14,6 +14,10 @@ local tests = {
 local funcs = {}
 
 function funcs.splitRectExample()
+    -- Temporarily set property
+    local oldValue = DxProperties.Rect.click_order
+    DxProperties.Rect.click_order = true
+
     -- Create a "main" parent rect, draggable as well as all children
     local rect = Rect:new(50, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
@@ -31,9 +35,16 @@ function funcs.splitRectExample()
     local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
     rect5:setCentered()
     rect5:setProperty("force_in_bounds", true)
+
+    -- Reset property
+    DxProperties.Rect.click_order = oldValue
 end
 
 function funcs.splitRectExampleCanvas()
+    -- Temporarily set property
+    local oldValue = DxProperties.Rect.click_order
+    DxProperties.Rect.click_order = true
+
     -- Create a "main" parent rect, draggable as well as all children
     local rect = Rect:new(300, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
@@ -54,24 +65,30 @@ function funcs.splitRectExampleCanvas()
     local rect5 = Rect:new(0, 0, 25, 25, tocolor(166, 166, 166), rect4, "rect5")
     rect5:setCentered()
     rect5:setProperty("force_in_bounds", true)
+
+    -- Reset property
+    DxProperties.Rect.click_order = oldValue
 end
 
 function funcs.dragPropagationExample()
+    -- Temporarily set properties globally
+    local props = DxProperties.Rect
+    local oldValues = {
+        click_order = props.click_order,
+        force_in_bounds = props.force_in_bounds,
+        click_propagate = props.click_propagate,
+        drag_propagate = props.drag_propagate
+    }
+
+    DxProperties.Rect.click_order = true
+    DxProperties.Rect.force_in_bounds = true
+    DxProperties.Rect.click_propagate = true
+    DxProperties.Rect.drag_propagate = true
+
     -- Create a "main" parent rect, draggable as well as all children
     local rect = Rect:new(550, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
     rect:setProperty("drag_children", true)
-
-    -- Temporarily set properties globally
-    local oldValues = {
-        force_in_bounds = DxProperties.force_in_bounds,
-        click_propagate = DxProperties.click_propagate,
-        drag_propagate = DxProperties.drag_propagate
-    }
-
-    DxProperties.force_in_bounds = true
-    DxProperties.click_propagate = true
-    DxProperties.drag_propagate = true
 
     -- Create some rectangles, children of each other, all centered
     local rect2 = Rect:new(0, 0, 150, 150, tocolor(66, 66, 66), rect, "rect2")
@@ -91,12 +108,17 @@ function funcs.dragPropagationExample()
     rect5:setFrozen("y", true)
 
     -- Reset properties
-    DxProperties.force_in_bounds = oldValues.force_in_bounds
-    DxProperties.click_propagate = oldValues.click_propagate
-    DxProperties.drag_propagate = oldValues.drag_propagate
+    DxProperties.Rect.click_order = oldValues.click_order
+    DxProperties.Rect.force_in_bounds = oldValues.force_in_bounds
+    DxProperties.Rect.click_propagate = oldValues.click_propagate
+    DxProperties.Rect.drag_propagate = oldValues.drag_propagate
 end
 
 function funcs.animationLoopExample()
+    -- Temporarily set property
+    local oldValue = DxProperties.Rect.click_order
+    DxProperties.Rect.click_order = true
+
     -- Create a "main" parent rect
     local rect = Rect:new(800, 50, 200, 200, tocolor(33, 33, 33), false, "rect")
     rect:setProperty("drag", true)
@@ -112,11 +134,11 @@ function funcs.animationLoopExample()
     -- Note: animations only support automatically updating properties which consist of a single number value (e.g x, y, width, height)
     -- We need to interpolate r, g and b here, so pass a table of numbers to interpolate and manually update the color value.
     local animColorRedToBlue = Animation:new("color", {255, 0, 0}, {0, 0, 255}, 1000, "InOutBounce", true, function(dxInstance, interpolated)
-        dxInstance.color = tocolor(interpolated[1], interpolated[2], interpolated[3])
+        dxInstance.styles.background.normal = { interpolated[1], interpolated[2], interpolated[3], 255 }
     end)
 
     local animColorBlueToRed = Animation:new("color", {0, 0, 255}, {255, 0, 0}, 1000, "InOutBounce", true, function(dxInstance, interpolated)
-        dxInstance.color = tocolor(interpolated[1], interpolated[2], interpolated[3])
+        dxInstance.styles.background.normal = { interpolated[1], interpolated[2], interpolated[3], 255 }
     end)
 
     -- Toggle all animations every second, creating a delay between them
@@ -134,6 +156,9 @@ function funcs.animationLoopExample()
     -- Add our color animations, one starting automatically, the other paused (until toggled by the timer above)
     rect2:addAnimation(animColorRedToBlue, true)
     rect2:addAnimation(animColorBlueToRed, false)
+
+    -- Reset property
+    DxProperties.Rect.click_order = oldValue
 end
 
 function funcs.buttonExample()

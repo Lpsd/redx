@@ -6,13 +6,25 @@
 
     <!-- Files -->
     <file src="meta.xml" />
+
+    <!-- Properties (do not modify) -->
     <file src="default.properties" />
+    <file src="properties/Button.properties" />
+    
+    <!-- Properties (add your own here) -->
+    <!-- e.g <file src="properties/custom/Rect.properties" /> (Note: the filename must be a valid class/type name) -->
+
+    <!-- Styles (do not modify) -->
+    <file src="default.style" />
+    <file src="styles/Button.style" />
+    
+    <!-- Styles (add your own here) -->
+    <!-- e.g <file src="styles/custom/Rect.style" /> (Note: the filename must be a valid class/type name) -->
     
     <!-- Shared -->
     <script src="shared/classlib.lua" type="shared" />
     <script src="shared/utils.lua" type="shared" />
     <script src="shared/constants.lua" type="shared" />
-    
         <!-- Classes -->
         <script src="shared/classes/Class.lua" type="shared" />
         <script src="shared/classes/Singleton.lua" type="shared" />
@@ -20,17 +32,19 @@
 
     <!-- Client -->
     <script src="client/utils.lua" type="client" />
+    <script src="client/properties.lua" type="client" />
+    <script src="client/styles.lua" type="client" />
     <script src="client/tests.lua" type="client" />
     <script src="client/main.lua" type="client" />
         <!-- Classes -->
             <script src="client/classes/Animation.lua" type="client" />
 
+            <!-- Extends -->
+            <script src="client/classes/types/extends/Text.lua" type="client" />
+
             <!-- Types -->
-                <!-- Extends -->
-                <script src="client/classes/types/extends/Text.lua" type="client" />
             <script src="client/classes/types/Dx.lua" type="client" />
             <script src="client/classes/types/Rect.lua" type="client" />
             <script src="client/classes/types/Canvas.lua" type="client" />
             <script src="client/classes/types/Button.lua" type="client" />
-
 </meta>

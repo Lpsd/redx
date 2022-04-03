@@ -85,3 +85,12 @@ function deepcopy(orig)
     end
     return copy
 end
+
+function getRGBA(color)
+    local r = bitExtract(color, 0, 8)
+    local g = bitExtract(color, 8, 8)
+    local b = bitExtract(color, 16, 8)
+    local a = bitExtract(color, 24, 8)
+
+    return r, g, b, a
+end

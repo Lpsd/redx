@@ -21,10 +21,16 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         width, height = width.x, width.y
     end
 
+    self.type = DX_BASE
+
+    if (self.pre_constructor) then
+        self:pre_constructor()
+    end
+
     parent = isDx(parent) and parent or DxRootInstance
 
     self.propertyListeners = {}
-    self.properties = {}
+    self.internalProperties = {}
 
     -- Used for property listeners
     local mt = getmetatable(self)
@@ -32,14 +38,17 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     mt.__index = self.get
     setmetatable(self, mt)
 
-    self.type = DX_BASE
     self.name = name
 
     self.element = createElement("dx")
     self.index = -1
 
     self.parent = false
+
     self.children = {}
+    self.inheritedChildren = {}
+
+    self.ancestors = {}
 
     self.renderFunctions = {
         render = {},
@@ -101,7 +110,10 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         y = false
     }
 
-    self.properties = deepcopy(DxProperties)
+    self.properties = deepcopy(DxProperties[self:getClassName()] or DxProperties.default)
+    self.styles = deepcopy(DxStyles[self:getClassName()] or DxStyles.default)
+
+    self.state = STATE_NORMAL
 
     self.animations = {}
     self.animationAffectors = {
@@ -113,10 +125,6 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         }
     }
 
-    if (self.pre_constructor) then
-        self:pre_constructor()
-    end
-
     self.x, self.y = tonumber(x) or 0, tonumber(y) or 0
     self.absoluteX, self.absoluteY = self.x, self.y
 
@@ -124,7 +132,11 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
         tonumber(width) and math.max(self.minWidth, width) or self.minWidth,
         tonumber(width) and math.max(self.minHeight, height) or self.minHeight
 
-    self.color = tonumber(color) or tocolor(33, 33, 33)
+    color = tonumber(color)
+
+    if (color) then
+        self.styles.background.normal = { getRGBA(color) }
+    end
 
     self:addRenderFunction(self.updatePosition, true)
     self:addRenderFunction(self.processAnimations)
@@ -137,6 +149,7 @@ function Dx:virtual_constructor(x, y, width, height, color, parent, name)
     self:addPropertyListener("color", func, false)
     self:addPropertyListener("index", func, false)
     self:addPropertyListener("canvas", func, false)
+    self:addPropertyListener("state", func, false)
 
     self.lastLogMs = 0
     self.logDelayMs = 3000
@@ -203,7 +216,7 @@ function Dx:processAnimations()
         else
             if (animation.state) and (not animation.finished) then
                 animation:run()
-                
+
                 if (animation.onRender) then
                     animation.onRender(self, animation.i)
                 end
@@ -242,7 +255,7 @@ function Dx:get(property)
     local class = getmetatable(self).__class
 
     if (rawget(self, "propertyListeners")[property]) then
-        return (class.properties) and (class.properties[property]) or rawget(self, "properties")[property] or
+        return (class.internalProperties) and (class.internalProperties[property]) or rawget(self, "internalProperties")[property] or
             rawget(self, property)
     end
 
@@ -253,13 +266,13 @@ function Dx:set(property, newValue)
     local func = rawget(self, "propertyListeners")[property]
 
     if (func) then
-        local properties = rawget(self, "properties")
+        local properties = rawget(self, "internalProperties")
 
         rawset(self, property, nil)
 
         if (properties[property] ~= newValue) then
             properties[property] = newValue
-            rawset(self, "properties", properties)
+            rawset(self, "internalProperties", properties)
 
             if (type(func) == "function") then
                 func(property)
@@ -301,10 +314,16 @@ function Dx:setParent(parent)
     self.parent = parent
     parent:addChild(self)
 
+    self:updateAncestors()
+    self:doPropagate(false, "updateAncestors", true)
+
+    self:updateInheritedChildren()
+    self:doPropagate(true, "updateInheritedChildren")
+
     self:checkForCanvas()
 
     self:updatePosition(true)
-    self:getTopLevelParent():doPropagate("onForceUpdatePosition", true)
+    self:doPropagate(true, "updateInheritedBounds", true)
 
     return true
 end
@@ -503,7 +522,7 @@ function Dx:addPropertyListener(property, func, bindFunc)
         self.propertyListeners[property] = (bindFunc) and bind(func, self) or func
     end
 
-    self.properties[property] = self[property]
+    self.internalProperties[property] = self[property]
 
     self[property] = nil
 
@@ -528,6 +547,10 @@ end
 
 function Dx:getEnumerableType()
     return self.type
+end
+
+function Dx:getClassName()
+    return DxTypeClasses[DxTypes[self.type]]
 end
 
 function Dx:getPosition(absolute)
@@ -568,7 +591,8 @@ function Dx:updatePosition(forceUpdate)
     if
         (self.previousX ~= (frozen and self.previousX or pos.x) or
             self.previousY ~= (frozen and self.previousY or pos.y)) and
-            (force == true or force_inherited == true) and (isDx(self.parent))
+            (force == true or force_inherited == true) and
+            (isDx(self.parent))
      then
         local parentBounds = self.parent:getBounds()
         local bounds = (force_inherited) and self:getInheritedBounds() or self:getBounds()
@@ -633,7 +657,8 @@ function Dx:setPosition(x, y, forceUpdate)
         self:updateBounds()
         self:updateInheritedBounds()
 
-        self:doPropagate("onForceUpdatePosition", true)
+        self:doPropagate(true, "updateInheritedBounds", true)
+        self:doPropagate(false, "onForceUpdatePosition", true)
     end
 
     return true
@@ -656,7 +681,15 @@ function Dx:getAncestorOffset(stopAt)
     return ancestorOffset
 end
 
-function Dx:getAncestors(tbl)
+function Dx:getAncestors(lookup, tbl)
+    if (type(lookup) ~= "boolean") then
+        lookup = false
+    end
+
+    if (not lookup) then
+        return self.ancestors
+    end
+
     tbl = (type(tbl) == "table") and tbl or {}
 
     local parent = self.parent
@@ -666,7 +699,7 @@ function Dx:getAncestors(tbl)
     end
 
     tbl[#tbl + 1] = parent
-    return parent:getAncestors(tbl)
+    return parent:getAncestors(true, tbl)
 end
 
 function Dx:isAncestor(ancestor)
@@ -734,15 +767,25 @@ function Dx:onClick(button, state, propagated, propagatedInstance)
 
     self.click[button].pos.x, self.click[button].pos.y = getAbsoluteCursorPosition()
     self.click[button].offset.x, self.click[button].offset.y = 0, 0
+
+    if (not state) then
+        self:onMouseUp(button)
+    end
 end
 
 function Dx:onClickLeft(state)
-    if (state) and (self:getProperty("click_order") == true) then
-        self:bringToFront()
+    if (state) then
+        self.state = (self.click.left.propagated == false) and STATE_SELECTED or self.state
 
-        if (self:getProperty("click_order_propagate") == true) then
-            for i, ancestor in ipairs(self:getAncestors()) do
-                ancestor:bringToFront()
+        if (self:getProperty("click_order") == true) then
+            self:bringToFront()
+
+            if (self:getProperty("click_order_propagate") == true) then
+                for i, ancestor in ipairs(self:getAncestors()) do
+                    if (ancestor:getProperty("click_order") == true) then
+                        ancestor:bringToFront()
+                    end
+                end
             end
         end
     end
@@ -764,6 +807,15 @@ function Dx:onMouseUp(button)
     end
 
     self.click[button].dragging = false
+    self.state = (DxHoveredInstance == self) and STATE_HOVERED or STATE_NORMAL
+end
+
+function Dx:onMouseEnter()
+    self.state = STATE_HOVERED
+end
+
+function Dx:onMouseLeave()
+    self.state = STATE_NORMAL
 end
 
 function Dx:sendToBack()
@@ -855,13 +907,29 @@ function Dx:updateInheritedBounds()
     self.inheritedBounds.relative = self:getInheritedBounds(false, true)
 end
 
-function Dx:getChildren(inherited)
+function Dx:updateAncestors()
+    self.ancestors = self:getAncestors(true)
+end
+
+function Dx:updateInheritedChildren()
+    self.inheritedChildren = self:getChildren(true, true)
+end
+
+function Dx:getChildren(inherited, lookup)
     if (type(inherited) ~= "boolean") then
         inherited = false
     end
 
     if (not inherited) then
         return self.children
+    end
+
+    if (type(lookup) ~= "boolean") then
+        lookup = false
+    end
+
+    if (not lookup) then
+        return self.inheritedChildren
     end
 
     local children = {}
@@ -875,6 +943,22 @@ function Dx:getChildren(inherited)
     end
 
     return children
+end
+
+function Dx:getParents(parents)
+    local parents = parents or {}
+
+    if (not self.parent) then
+        return parents
+    end
+
+    parents[#parents + 1] = self.parent
+
+    if (self.parent:isTopLevel()) then
+        return parents
+    end
+
+    return self.parent:getParents(parents)
 end
 
 function Dx:isChild(child, inherited)
@@ -918,14 +1002,22 @@ function Dx:getClicked()
     }
 end
 
-function Dx:doPropagate(method, inherited, ...)
+-- direction: up (true) = parents, down (false) = children
+-- inherited: whether to propagate on inherited children or not (doesn't affect parent propagation)
+function Dx:doPropagate(direction, method, inherited, ...)
+    if (type(direction) ~= "boolean") then
+        direction = false
+    end
+
     if (type(inherited) ~= "boolean") then
         inherited = false
     end
 
-    for i, child in ipairs(self:getChildren(inherited)) do
-        if (type(child[method]) == "function") then
-            child[method](child, self, ...)
+    local tbl = (direction) and self:getParents() or self:getChildren(inherited)
+
+    for i, instance in ipairs(tbl) do
+        if (type(instance[method]) == "function") then
+            instance[method](instance, self, ...)
         end
     end
 
@@ -976,4 +1068,8 @@ function Dx:setCentered(dx, inherited)
     }
 
     return self:setPosition(pos.x, pos.y)
+end
+
+function Dx:getState(enum)
+    return enum and self.state or DxStates[self.state]
 end
